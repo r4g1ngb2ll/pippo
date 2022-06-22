@@ -10,8 +10,8 @@ imagePullSecrets:
   - name: tmgc-registry-key
 
 securityContext: {}
-   runAsUser: 1001
-   fsGroup: 1001
+  runAsUser: 1001
+  fsGroup: 1001
 
 service:
   name: 
