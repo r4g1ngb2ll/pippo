@@ -1,0 +1,165 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cm-deploy-0
+  labels:
+    app: cm-deploy-0
+    namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      service: {{ .Values.service.name.cm }}
+      interface: {{ .Values.service.interface.name }}
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.service.name }}
+        interface: {{ .Values.service.interface.name }}
+    spec:
+      restartPolicy: Always
+      imagePullSecrets: 
+        - name: {{ .Values.imagePullSecrets.name }}
+      securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          fsGroup: {{ .Values.securityContext.fsGroup }}
+      hostAliases:
+      - ip: {{ .Values.ingress.hostAliases.ip }}
+        hostnames: {{ - range $.Values.ingress.hostAliases.hostnames }}
+      containers: 
+      - name: cm
+        image: {{ .Values.image.repository }} 
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        lifecycle:
+          preStop:
+            exec:
+              command: 
+                - {{ .Values.lifecycle.command }}
+                - preStop
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+        ports:
+      {{- range $key, $val := $.Values.ports.cm }}
+          - containerPort: {{ $key }}
+            name: {{ $val }}
+      {{- end }}
+        resources: {}
+        env:
+      {{- range $key, $val := $.Values.env.cm }}
+          - name: {{ $key }}
+            value: {{ $val }}
+      {{- end }}
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        readinessProbe:
+          exec:
+            command:
+            - {{ .Values.readinessProbe.lifecycle.command }}
+            - isRegistryReady
+          failureThreshold: {{ .Values.readinessProbe.cm.failureThreshold }}
+          initialDelaySeconds: {{ .Values.readinessProbe.cm.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.cm.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.cm.successThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.cm.timeoutSeconds }}
+        volumeMounts:
+        {{- range $.Values.volumeMounts.cm }}
+        - name: {{ .Values.volumeMounts.cm.name }}
+        - mountPath: {{ .Values.volumeMounts.cm.mountPath }}
+        {{- if gt 1 $.Values.volumeMounts.cm.count }}
+        - subPath: {{ .Values.volumeMounts.cm.subPath }}
+        {{- if gt 5 $.Values.volumeMounts.cm.count }}
+        - readOnly: true
+        {{- end }}
+        {{- end }}
+        {{- end }}
+      volumes: 
+      - name: cm-crt-vol
+        secret:
+          secretName: cm-crt
+        {{- range $.Values.volumes.cm }}
+      - name: {{ .Values.volumes.cm.name }}
+        secret:
+          secretName: {{ .Values.volumeMounts.cm.secretName }}
+          defaultMode: {{ .Values.volumeMounts.cm.defaultMode }}
+status: {}
+
+--------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tm-deploy-0
+  labels:
+    app: tm-deploy-0
+    namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: tm-deploy-0
+  template:
+    metadata:
+      name:  tm-deploy-0
+      labels:
+        service: {{ .Values.service.name.tm }}
+        app:  tm-deploy-0
+    spec:
+      restartPolicy: Always
+      imagePullSecrets: 
+        - name: {{ .Values.imagePullSecrets.name }}
+      securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          fsGroup: {{ .Values.securityContext.fsGroup }}
+      containers: 
+      - name: tm-svc-0
+        image: {{ .Values.image.repository }} 
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        lifecycle:
+          preStop:
+            exec:
+              command: 
+                - {{ .Values.readinessProbe.lifecycle.command }}
+                - preStop
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+        ports:
+      {{- range $key, $val := $.Values.ports.tm }}
+          - containerPort: {{ $key }}
+            name: {{ $val }}
+      {{- end }}
+        resources: {}
+        env:
+      {{- range $key, $val := $.Values.env.tm }}
+          - name: {{ $key }}
+            value: {{ $val }}
+      {{- end }}
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        readinessProbe:
+          httpGet:
+            path: /mashping
+            port: 20080
+          failureThreshold: {{ .Values.readinessProbe.tm.failureThreshold }}
+          initialDelaySeconds: {{ .Values.readinessProbe.tm.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.tm.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.tm.successThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.tm.timeoutSeconds }}
+        volumeMounts:
+        {{- range $.Values.volumeMounts.tm }}
+        - name: {{ .Values.volumeMounts.tm.name }}
+        - mountPath: {{ .Values.volumeMounts.tm.mountPath }}
+        {{- if gt 1 $.Values.volumeMounts.tm.count }}
+        - subPath: {{ .Values.volumeMounts.tm.subPath }}
+        {{- end }}
+        {{- end }}
+      volumes: 
+        {{- range $.Values.volumes.tm }}
+      - name: {{ .Values.volumes.tm.name }}
+        secret:
+          secretName: {{ .Values.volumeMounts.tm.secretName }}
+          defaultMode: {{ .Values.volumeMounts.tm.defaultMode }}
+status: {}
