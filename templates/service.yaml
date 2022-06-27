@@ -213,8 +213,8 @@ spec:
   {{- end }}
   {{- if .Values.reportingSvcExternal.status }}
   status: 
-  {{- if .Values.reportingSvcExternal.status-loadBalancer }}
-    loadBalancer: {{ .Values.reportingSvcExternal.status-loadBalancer }}
+  {{- if .Values.reportingSvcExternal.status.loadBalancer }}
+    loadBalancer: {{ .Values.reportingSvcExternal.status.loadBalancer }}
   {{- end }}
   {{- end }}
 
@@ -247,7 +247,10 @@ spec:
   {{- end }}
   {{- if .Values.reportingSvcExternal.status }}
   status: 
-  {{- if .Values.reportingSvcExternal.status-loadBalancer }}
-    loadBalancer: {{ .Values.reportingSvcExternal.status-loadBalancer }}
+  {{- if .Values.reportingSvcExternal.status.loadBalancer }}
+    loadBalancer: {{ .Values.reportingSvcExternal.status.loadBalancer }}
   {{- end }}
   {{- end }}
+
+---
+{{- end }}

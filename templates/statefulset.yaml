@@ -6,9 +6,9 @@ metadata:
 spec:
   serviceName: {{ .Values.cachePod0.serviceName }}
   replicas: {{ .Values.cachePod0.replicas }}
-  {{ - if .Values.cachePod0.podManagementPolicy }}
+  {{- if .Values.cachePod0.podManagementPolicy }}
   podManagementPolicy: {{ .Values.cachePod0.podManagementPolicy | quote }}
-  {{ - end }}
+  {{- end }}
   selector:
     matchLabels:
       app: {{ .Values.cachePod0.matadata.labels.app }}
@@ -20,7 +20,7 @@ spec:
         interface: {{ .Values.cachePod0.serviceName }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.cachePod0.terminationGracePeriodSeconds }}
-      {{ - if .Values.global.imagePullSecrets.name}}
+      {{- if .Values.global.imagePullSecrets.name}}
       imagePullSecrets:
         - name: {{ .Values.global.imagePullSecrets.name }}
       {{- end }}
@@ -32,7 +32,7 @@ spec:
          {{- if .Values.global.securityContext.fsGroup }}
           fsGroup: {{ .Values.global.securityContext.fsGroup }}
         {{- end }}
-      {{ - end }}
+      {{- end }} # end security
       {{- if  .Values.cachePod0.containers }}
       containers:
         {{- range $.Values.cachePod0.containers }}
@@ -85,6 +85,7 @@ spec:
             {{- end }}
             {{- end }}
           {{- end }}
+        {{- end }} #end if env
         {{- if .Values.cachePod0.containers.volumeMounts }}
         volumeMounts:
         {{- range $.Values.cachePod0.containers.volumeMounts }}
@@ -95,8 +96,9 @@ spec:
         {{- if .Values.cachePod0.containers.volumeMounts.subPath }}
           subPath: {{ .Values.cachePod0.containers.volumeMounts.subPath}}
         {{- end }}
-        {{- end }}
-      {{- end }}
+        {{- end }} #end if volumeMounts
+        {{- end }} #end range volumeMounts
+        {{- end }} #end range containers
       {{- if .Values.cachePod0.volumes }}
       volumes:
       {{- range $.Values.cachePod0.volumes }}
@@ -139,6 +141,7 @@ spec:
       {{- end }}
     {{- end }}
     {{- end }}
+  {{- end }}
   {{- end }}
   
 ---
@@ -269,7 +272,6 @@ spec:
        {{- end }}
       {{- end }} #end range volumes 
     {{- end }} #end volumes 
-  {{- if }}
   {{- if .Values.logPod0.volumeClaimTemplates }}
   volumeClaimTemplates:
   {{- range $.Values.logPod0.volumeClaimTemplates }}
@@ -278,7 +280,6 @@ spec:
       {{- if .Values.logPod0.volumeClaimTemplates.metadata.name }}
       name: {{ .Values.logPod0.volumeClaimTemplates.metadata.name }}
       {{- end }}
-  {{- end }}
   {{- if .Values.logPod0.volumeClaimTemplates.spec }}
     spec:
      {{- if .Values.logPod0.volumeClaimTemplates.spec.accessModes }}
@@ -294,11 +295,12 @@ spec:
           {{- if .Values.logPod0.volumeClaimTemplates.spec.resources.requests.storage}}
           storage: {{ .Values.logPod0.volumeClaimTemplates.spec.resources.requests.storage }}
           {{- end }}
-      {é- end }
-      {{- end }}
-  {{- end }}
-  {{- end }}
-  {{- end }}
+      {{- end }} #end requests
+      {{- end }} #end resources 
+  {{- end }} #end spec
+  {{- end }} #end matadata
+  {{- end }} #end range 
+  {{- end }} #end if
 
 ---
 apiVersion: {{ .Values.global.apiVersion}}
@@ -322,12 +324,12 @@ spec:
       {{- if .Values.nosqlPod0.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ .Values.nosqlPod0.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if if .Values.global.imagePullSecrets}}
+      {{- if .Values.global.imagePullSecrets}}
       imagePullSecrets:
       {{- range $.Values.global.imagePullSecrets}}
         - name: {{ .Values.global.imagePullSecrets.name}}
       {{- end }}
-      {{- end }}
+      {{- end }} #end if imagePull
       {{- if .Values.global.securityContext }}
       securityContext:
       {{- if .Values.global.securityContext.runAsUser }}
@@ -336,7 +338,7 @@ spec:
       {{- if .Values.global.securityContext.fsGroup }}
           fsGroup: {{ .Values.global.securityContext.fsGroup }}
       {{- end }}
-      {{- end }}
+      {{- end }} #end securityContext
       {{- if .Values.nosqlPod0.containers }}
       containers:
       {{- range $.Values.nosqlPod0.containers }}
@@ -446,7 +448,6 @@ spec:
         {{- end }} #end range volumeMounts 
         {{- end }} #end if volumeMounts
         {{- end }} #end range container 
-        {{- end }} #end if containers
       {{- if .Values.nosqlPod0.volumes }}
       volumes:
       {{- range $.Values.nosqlPod0.volumes }}
@@ -515,7 +516,7 @@ spec:
       {{- if .Values.reportingPod0.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ .Values.reportingPod0.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if if .Values.global.imagePullSecrets}}
+      {{- if .Values.global.imagePullSecrets}}
       imagePullSecrets:
       {{- range $.Values.global.imagePullSecrets}}
         - name: {{ .Values.global.imagePullSecrets.name}}
@@ -648,12 +649,12 @@ spec:
         requests:
            {{- if $.Values.reportingPod0.volumeClaimTemplates.spec.resources.requests.storage }}
           storage: {{- if $.Values.reportingPod0.volumeClaimTemplates.spec.resources.requests.storage }}
-          {{- end }}
-        {{- end }}
-      {{- end }}
-    {{- end }}
-  {{- end }}
-  {{- end }}
+          {{- end }} #end storage
+        {{- end }} # end requests
+      {{- end }} # end resources
+    {{- end }} #end spec
+  {{- end }} #end range 
+  {{- end }} #end if
 
 ---
 apiVersion: {{ .Values.global.apiVersion}}
@@ -677,12 +678,12 @@ spec:
       {{- if .Values.sqlPod0.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ .Values.sqlPod0.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if if .Values.global.imagePullSecrets}}
+      {{- if .Values.global.imagePullSecrets}}
       imagePullSecrets:
       {{- range $.Values.global.imagePullSecrets}}
         - name: {{ .Values.global.imagePullSecrets.name}}
       {{- end }}
-      {{- end }}
+      {{- end }} #end if imagePullSecrets
       {{- if .Values.global.securityContext }}
       securityContext:
       {{- if .Values.global.securityContext.runAsUser }}
@@ -691,7 +692,7 @@ spec:
       {{- if .Values.global.securityContext.fsGroup }}
           fsGroup: {{ .Values.global.securityContext.fsGroup }}
       {{- end }}
-      {{- end }}
+      {{- end }} #end if securityContext
       {{- if .Values.sqlPod0.containers }}
       containers:
       {{- range $.Values.sqlPod0.containers }}
@@ -825,10 +826,12 @@ spec:
         requests:
            {{- if $.Values.sqlPod0.volumeClaimTemplates.spec.resources.requests.storage }}
           storage: {{- if $.Values.sqlPod0.volumeClaimTemplates.spec.resources.requests.storage }}
-          {{- end }}
-        {{- end }}
-      {{- end }}
-    {{- end }}
-  {{- end }}
-  {{- end }}
+          {{- end }} #end storage 
+        {{- end }} #end requests 
+      {{- end }} #end resources
+    {{- end }} #end spec
+  {{- end }} #end range 
+  {{- end }} #end if volumeClaim
 
+---
+{{- end}}

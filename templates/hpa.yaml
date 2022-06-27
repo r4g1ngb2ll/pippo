@@ -1,3 +1,4 @@
+#tm autoscaling
 {{- if .Values.tm.autoscaling.enabled }}
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
@@ -25,7 +26,7 @@ spec:
     {{- end }}
 {{- end }}
 ---
-
+#logPod autoscaling
 {{- if .Values.logPod0.autoscaling.enabled }}
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
@@ -54,6 +55,7 @@ spec:
 {{- end }}
 
 ---
+#cachePod autoscaling
 {{- if .Values.cachePod0.autoscaling.enabled }}
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
