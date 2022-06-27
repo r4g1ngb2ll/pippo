@@ -1,0 +1,834 @@
+apiVersion: {{ .Values.global.apiVersion }}
+kind: StatefulSet
+metadata:
+  name: {{ .Values.cachePod0.appName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  serviceName: {{ .Values.cachePod0.serviceName }}
+  replicas: {{ .Values.cachePod0.replicas }}
+  {{ - if .Values.cachePod0.podManagementPolicy }}
+  podManagementPolicy: {{ .Values.cachePod0.podManagementPolicy | quote }}
+  {{ - end }}
+  selector:
+    matchLabels:
+      app: {{ .Values.cachePod0.matadata.labels.app }}
+      interface: {{ .Values.cachePod0.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cachePod0.matadata.labels.app }}
+        interface: {{ .Values.cachePod0.serviceName }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.cachePod0.terminationGracePeriodSeconds }}
+      {{ - if .Values.global.imagePullSecrets.name}}
+      imagePullSecrets:
+        - name: {{ .Values.global.imagePullSecrets.name }}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext:
+        {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+        {{- end }}
+         {{- if .Values.global.securityContext.fsGroup }}
+          fsGroup: {{ .Values.global.securityContext.fsGroup }}
+        {{- end }}
+      {{ - end }}
+      {{- if  .Values.cachePod0.containers }}
+      containers:
+        {{- range $.Values.cachePod0.containers }}
+        {{- if .Values.cachePod0.containers.name }}
+      - name: {{ .Values.cachePod0.containers.name }}
+        {{- end }}
+        {{- if .Values.cachePod0.containers.image }}
+        image: "{{ .Values.cachePod0.containers.image }}:{{ default "latest" .Values.cachePod0.containers.tag }}"
+        {{- end }}
+        {{- if .Values.cachePod0.containers.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.cachePod0.containers.imagePullPolicy }}
+        {{- end }}
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - {{ .Values.global.lifecycle.command }}
+              - preStop
+        {{- if .Values.global.securityContext }}
+        securityContext:
+          {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+        {{- end }}
+        {{- end }}
+        {{- end }} 
+        {{- if .Values.cachePod0.containers.ports}}
+        ports:
+          {{- range $.Values.cachePod0.containers.ports }}
+        - containerPort: {{ .Values.cachePod0.containers.ports.containerPort}}
+          name:  {{ .Values.cachePod0.containers.ports.name}}
+          {{- end }}
+        {{- end }}
+        resources: {}
+        {{- if .Values.cachePod0.containers.env}}
+        env:
+          {{- range $.Values.cachePod0.containers.env }}
+          {{- if .Values.cachePod0.containers.env.name }}
+          - name: {{ .Values.cachePod0.containers.env.name }}
+          {{- end }}
+          {{- if .Values.cachePod0.containers.env.value }}
+            value: {{ .Values.cachePod0.containers.env.value | quote }}
+          {{- end }}
+          {{- if .Values.cachePod0.containers.env.valueFrom }}
+            valueFrom:
+            {{- if .Values.cachePod0.containers.env.valueFrom.fieldRef }}
+              fieldRef:
+                {{- if .Values.cachePod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                fieldPath: status.podIP
+                {{- end }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+        {{- if .Values.cachePod0.containers.volumeMounts }}
+        volumeMounts:
+        {{- range $.Values.cachePod0.containers.volumeMounts }}
+        - name: {{.Values.cachePod0.containers.volumeMounts.name }}
+        {{- if .Values.cachePod0.containers.volumeMounts.mountPath }}
+          mountPath: {{ .Values.cachePod0.containers.volumeMounts.mountPath}}
+        {{- end }}
+        {{- if .Values.cachePod0.containers.volumeMounts.subPath }}
+          subPath: {{ .Values.cachePod0.containers.volumeMounts.subPath}}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.cachePod0.volumes }}
+      volumes:
+      {{- range $.Values.cachePod0.volumes }}
+      - name: {{.Values.cachePod0.volumes.name }}
+         {{- if .Values.cachePod0.volumes.secret }}
+        secret:
+        {{- if .Values.cachePod0.volumes.secret.secretName }}
+          secretName: {{ .Values.cachePod0.volumes.secret.secretName }}
+        {{- end }}
+         {{- if .Values.cachePod0.volumes.secret.defaultMode }}
+          defaultMode: {{ .Values.cachePod0.volumes.secret.defaultMode }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+  {{- if .Values.cachePod0.volumeClaimTemplates }}
+  volumeClaimTemplates:
+   {{- range $.Values.cachePod0.volumeClaimTemplates }}
+   {{- if .Values.cachePod0.volumeClaimTemplates.metadata }}
+  - metadata:
+     {{- if .Values.cachePod0.volumeClaimTemplates.metadata.name }}
+      name: {{ .Values.cachePod0.volumeClaimTemplates.nmetadata.name }}
+    {{- end }}
+     {{- if .Values.cachePod0.volumeClaimTemplates.spec }}
+    spec:
+      {{- if .Values.cachePod0.volumeClaimTemplates.spec.accessModes }}
+      accessModes: {{ .Values.cachePod0.volumeClaimTemplates.spec.accessModes }}
+      {{- end }}
+      {{- if .Values.cachePod0.volumeClaimTemplates.spec.storageClassName }}
+      storageClassName: {{ .Values.cachePod0.volumeClaimTemplates.spec.storageClassName }}
+      {{- end }}
+      {{- if .Values.cachePod0.volumeClaimTemplates.spec.resources }}
+      resources:
+       {{- if .Values.cachePod0.volumeClaimTemplates.spec.resources.requests }}
+        requests:
+          {{- if .Values.cachePod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          storage: {{ .Values.cachePod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          {{- end }}
+       {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+  
+---
+apiVersion: {{ .Values.global.apiVersion }}
+kind: StatefulSet
+metadata:
+  name: {{ .Values.logPod0.appName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  serviceName: {{ .Values.logPod0.serviceName }}
+  replicas: {{ .Values.logPod0.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.logPod0.metadata.labels.app }}
+      interface: {{ .Values.logPod0.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.logPod0.metadata.labels.app }}
+        interface: {{ .Values.logPod0.serviceName }}
+    spec:
+      {{- if .Values.logPod0.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.logPod0.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if .Values.logPod0.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.global.imagePullSecrets.name}}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext:
+      {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+      {{- end }}
+       {{- if .Values.global.securityContext.fsGroup }}
+          fsGroup: {{ .Values.global.securityContext.fsGroup }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.logPod0.containers }}
+      containers:
+      {{- range $.Values.logPod0.containers }}
+      {{- if .Values.logPod0.containers.name }}
+      - name: {{ .Values.logPod0.containers.name }}
+        {{- end }}
+        {{- if .Values.logPod0.containers.image }}
+        image: "{{ .Values.logPod0.containers.image }}:{{ default "latest" .Values.logPod0.containers.tag}}"
+        {{- end }}
+        {{- if .Values.logPod0.containers.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.logPod0.containers.imagePullPolicy }}
+        {{- end }}
+        {{- if .Values.logPod0.containers.lifecycle }}
+        lifecycle:
+          {{- if .Values.logPod0.containers.lifecycle.preStop }}
+          preStop:
+            exec:
+              command:
+              - {{ .Values.global.lifecycle.command }}
+              - preStop
+          {{- end }}
+        {{- end }}
+        {{- if .Values.global.securityContext }}
+        securityContext:
+           {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{  .Values.global.securityContext.runAsUser }}    
+          {{- end }}
+        {{- end }}
+        {{- if .Values.cachePod0.containers.ports }}
+        ports:
+        {{- range $.Values.logPod0.containers.ports }}
+        - containerPort: {{ .Values.logPod0.containers.ports.containerPort }}
+          {{- if .Values.logPod0.containers.ports.name }}
+          name: {{ .Values.logPod0.containers.ports.name }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+        {{- if .Values.logPod0.containers.resources}}
+        resources: {{ .Values.logPod0.containers.resources }}
+        {{- end }}
+        {{- if .Values.logPod0.containers.env }}
+        env:
+          {{- range $.Values.logPod0.containers.env }}
+          {{- if .Values.logPod0.containers.env.name }}
+          - name: {{ .Values.logPod0.containers.env.name }}
+          {{- end }}
+           {{- if .Values.logPod0.containers.env.value }}
+            value: {{ .Values.logPod0.containers.env.value | quote }}
+           {{- end }}
+            {{- if .Values.logPod0.containers.env.valueFrom }}
+            valueFrom:
+               {{- if .Values.logPod0.containers.env.valueFrom.fieldRef }}
+              fieldRef:
+                {{- if .Values.logPod0.containers.env.valueFrom.fieldRef.fieldPath}}
+                fieldPath: {{ .Values.logPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                {{- end }}
+              {{- end }}
+           {{- end }} 
+          {{- end }} #chiusura range env 
+          {{- end }} #chiusura env
+        {{- if .Values.logPod0.containers.volumeMounts }}
+        volumeMounts:
+          {{- range $.Values.logPod0.containers.env }}
+          {{- if .Values.logPod0.containers.env.name}}
+        - name: {{ .Values.logPod0.containers.env.name }}
+          {{- end }}
+          {{- if .Values.logPod0.containers.env.mountPath}}
+          mountPath: {{ .Values.logPod0.containers.env.mountPath }}
+          {{- end }}
+           {{- if .Values.logPod0.containers.env.subPath}}
+           subPath: {{ .Values.logPod0.containers.env.subPath }}
+           {{- end }}
+         {{- end }} #end range 
+        {{- end }} #end volumeMounts
+     {{- end }} #chiusura container
+     {{- if .Values.logPod0.volumes }}
+      volumes:
+       {{- range $.Values.logPod0.volumes }}
+       {{- if .Values.logPod0.volumes.name }}
+      - name: {{ .Values.logPod0.volumes.name }}
+       {{- end }}
+       {{- if .Values.logPod0.volumes.secret }}
+        secret:
+          {{- if .Values.logPod0.volumes.secret.secretName }}
+          secretName: {{ .Values.logPod0.volumes.secret.secretName }}
+          {{- end }}
+          {{- if .Values.logPod0.volumes.secret.defaultMode }}
+          defaultMode: {{ .Values.logPod0.volumes.secret.defaultMode }}
+          {{- end }}
+       {{- end }}
+      {{- end }} #end range volumes 
+    {{- end }} #end volumes 
+  {{- if }}
+  {{- if .Values.logPod0.volumeClaimTemplates }}
+  volumeClaimTemplates:
+  {{- range $.Values.logPod0.volumeClaimTemplates }}
+  {{- if .Values.logPod0.volumeClaimTemplates.metadata }}
+  - metadata:
+      {{- if .Values.logPod0.volumeClaimTemplates.metadata.name }}
+      name: {{ .Values.logPod0.volumeClaimTemplates.metadata.name }}
+      {{- end }}
+  {{- end }}
+  {{- if .Values.logPod0.volumeClaimTemplates.spec }}
+    spec:
+     {{- if .Values.logPod0.volumeClaimTemplates.spec.accessModes }}
+      accessModes: {{ .Values.logPod0.volumeClaimTemplates.spec.accessModes }}
+      {{- end }}
+      {{- if .Values.logPod0.volumeClaimTemplates.spec.storageClassName }}
+      storageClassName: {{ .Values.logPod0.volumeClaimTemplates.spec.storageClassName }}
+      {{- end }}
+      {{- if .Values.logPod0.volumeClaimTemplates.spec.resources }}
+      resources:
+      {{- if .Values.logPod0.volumeClaimTemplates.spec.resources.requests }}
+        requests:
+          {{- if .Values.logPod0.volumeClaimTemplates.spec.resources.requests.storage}}
+          storage: {{ .Values.logPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          {{- end }}
+      {é- end }
+      {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiVersion}}
+kind: StatefulSet
+metadata:
+  name: {{ .Values.nosqlPod0.appName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  serviceName: {{ .Values.nosqlPod0.serviceName }}
+  replicas:  {{ .Values.nosqlPod0.replicas }}
+  selector:
+    matchLabels:
+      app:  {{ .Values.nosqlPod0.metadata.labels.app }}
+      interface: {{ .Values.nosqlPod0.metadata.labels.interface }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.nosqlPod0.metadata.labels.app }}
+        interface: {{ .Values.nosqlPod0.metadata.labels.interface }}
+    spec:
+      {{- if .Values.nosqlPod0.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.nosqlPod0.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if if .Values.global.imagePullSecrets}}
+      imagePullSecrets:
+      {{- range $.Values.global.imagePullSecrets}}
+        - name: {{ .Values.global.imagePullSecrets.name}}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext:
+      {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+      {{- end }}
+      {{- if .Values.global.securityContext.fsGroup }}
+          fsGroup: {{ .Values.global.securityContext.fsGroup }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.nosqlPod0.containers }}
+      containers:
+      {{- range $.Values.nosqlPod0.containers }}
+      {{- if .Values.nosqlPod0.containers.name }}
+      - name: {{ .Values.nosqlPod0.containers.name }}
+      {{- end }}
+      {{- if .Values.nosqlPod0.containers.image }}
+        image: "{{ .Values.nosqlPod0.containers.image }}:{{ .Values.nosqlPod0.containers.tag }}"
+      {{- end }}
+      {{- if .Values.nosqlPod0.containers.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.nosqlPod0.containers.imagePullPolicy }}
+      {{- end }}
+      {{- if .Values.global.lifecycle }}
+        lifecycle:
+        {{- if .Values.global.lifecycle.preStop }}
+          preStop:
+            exec:
+              command:
+              - {{ .Values.global.lifecycle.command }}
+              - preStop
+        {{- end }} #end  prestop
+        {{- end }} #end lifecycle
+        {{- if .Values.global.securityContext}}
+        securityContext:
+        {{- if .Values.global.securityContext.runAsUser}}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.nosqlPod0.containers.ports }}
+        ports:
+        {{- range $.Values.nosqlPod0.containers.ports }}
+        {{- if .Values.nosqlPod0.containers.ports.containerPort }}
+        - containerPort: {{ .Values.nosqlPod0.containers.ports.containerPort }}
+        {{- end }}
+        {{- if .Values.nosqlPod0.containers.ports.name }}
+          name: {{ .Values.nosqlPod0.containers.ports.name }}
+        {{- end }}
+        {{- end }} # end range ports
+        {{- end }} #end if ports
+        {{- if .Values.nosqlPod0.containers.resources }}
+        resources: {{ .Values.nosqlPod0.containers.resources }}
+        {{- end }}
+        {{- if .Values.nosqlPod0.containers.lifecycle }}
+        lifecycle:
+          {{- if .Values.nosqlPod0.containers.lifecycle.preStop }}
+          preStop:
+            exec:
+              command: 
+              {{- range $.Values.nosqlPod0.containers.lifecycle.preStop.command }}
+              - {{ .Values.nosqlPod0.containers.lifecycle.preStop.command }}
+              {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.nosqlPod0.containers.env }}
+        env:
+        {{- range $.Values.nosqlPod0.containers.env }}
+          - name: {{.Values.nosqlPod0.containers.env.name}}
+            {{- if .Values.nosqlPod0.containers.env.value }}
+            value: {{ .Values.nosqlPod0.containers.env.value | quote }}
+            {{- end }}
+            {{- if .Values.nosqlPod0.containers.env.valueFrom }}
+             valueFrom:
+               {{- if .Values.nosqlPod0.containers.env.valueFrom.fieldRef}}
+               fieldRef: 
+                 {{- if .Values.nosqlPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                 fieldPath: {{ .Values.nosqlPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                 {{- end }}
+               {{- end}}
+            {{- end }}
+          {{- end }} # end range env 
+          {{- end }} # end if env
+          {{- if .Values.nosqlPod0.containers.readinessProbe }}
+        readinessProbe:
+          exec:
+            command:
+            {{- range $.Values.nosqlPod0.containers.readinessProbe.command }}
+            - {{ .Values.nosqlPod0.containers.readinessProbe.command }}
+            {{- end }}
+          {{- if .Values.nosqlPod0.containers.readinessProbe.failureThreshold }}
+          failureThreshold: {{ .Values.nosqlPod0.containers.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.nosqlPod0.containers.readinessProbe.initialDelaySeconds }}
+          initialDelaySeconds: {{ .Values.nosqlPod0.containers.readinessProbe.initialDelaySeconds }}
+          {{- end }}
+          {{- if .Values.nosqlPod0.containers.readinessProbe.periodSeconds }}
+          periodSeconds: {{ .Values.nosqlPod0.containers.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.nosqlPod0.containers.readinessProbe.successThreshold }}
+          successThreshold: {{ .Values.nosqlPod0.containers.readinessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.nosqlPod0.containers.readinessProbe.timeoutSeconds }}
+          timeoutSeconds: {{ .Values.nosqlPod0.containers.readinessProbe.timeoutSeconds }}
+          {{- end }}
+        {{- end }} #end if readinessProbe 
+        {{- if .Values.nosqlPod0.containers.volumeMounts }}
+        volumeMounts:
+        {{- range $.Values.nosqlPod0.containers.volumeMounts }}
+        {{- if .Values.nosqlPod0.containers.volumeMounts.name }}
+        - name: {{ .Values.nosqlPod0.containers.volumeMounts.name }}
+        {{- end }}
+        {[- if .Values.nosqlPod0.containers.volumeMounts.mountPath ]}
+          mountPath: {{ .Values.nosqlPod0.containers.volumeMounts.mountPath }}
+        {{- end }}
+        {{- if .Values.nosqlPod0.containers.volumeMounts.subPath }}
+          subPath: {{ .Values.nosqlPod0.containers.volumeMounts.subPath }}
+        {{- end }}
+        {{- end }} #end range volumeMounts 
+        {{- end }} #end if volumeMounts
+        {{- end }} #end range container 
+        {{- end }} #end if containers
+      {{- if .Values.nosqlPod0.volumes }}
+      volumes:
+      {{- range $.Values.nosqlPod0.volumes }}
+      - name: {{ .Values.nosqlPod0.volumes.name }}
+      {{- if .Values.nosqlPod0.volumes.secret }}
+        secret:
+        {{- if .Values.nosqlPod0.volumes.secret.secretName }}
+          secretName: {{ .Values.nosqlPod0.volumes.secret.secretName }}
+        {{- end }}
+        {{- if .Values.nosqlPod0.volumes.secret.defaultMode }}
+          defaultMode: {{ .Values.nosqlPod0.volumes.secret.defaultMode }}
+        {{- end }}
+      {{- end }} #end if secret 
+      {{- end }} #end range volumes 
+      {{- end }} #end if volumes 
+  {{- if .Values.nosqlPod0.volumeClaimTemplates }}
+  volumeClaimTemplates:
+  {{- range $.Values.nosqlPod0.volumeClaimTemplates }}
+  - metadata:
+    {{- if .Values.nosqlPod0.volumeClaimTemplates.metadata.name }}
+      name: {{ .Values.nosqlPod0.volumeClaimTemplates.metadata.name }}
+    {{- end }}
+    {{- if .Values.nosqlPod0.volumeClaimTemplates.spec}}
+    spec:
+      {{- if .Values.nosqlPod0.volumeClaimTemplates.spec.accessModes }}
+      accessModes: {{ .Values.nosqlPod0.volumeClaimTemplates.spec.accessModes }}
+      {{- end }}
+      {{- if  .Values.nosqlPod0.volumeClaimTemplates.spec.storageClassName }}
+      storageClassName: {{ .Values.nosqlPod0.volumeClaimTemplates.spec.storageClassName }}
+      {{- end }}
+      {{- if  .Values.nosqlPod0.volumeClaimTemplates.spec.resources }}
+      resources:
+          {{- if $.Values.nosqlPod0.volumeClaimTemplates.spec.resources.requests }}
+        requests:
+           {{- if $.Values.nosqlPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          storage: {{- if $.Values.nosqlPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiVersion}}
+kind: StatefulSet
+metadata:
+  name: {{ .Values.reportingPod0.appName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  serviceName: {{ .Values.reportingPod0.serviceName }}
+  replicas:  {{ .Values.reportingPod0.replicas }}
+  {{- if .Values.reportingPod0.podManagementPolicy }}
+  podManagementPolicy: {{ .Values.reportingPod0.podManagementPolicy }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app:  {{ .Values.reportingPod0.metadata.labels.app }}
+      interface: {{ .Values.reportingPod0.metadata.labels.interface }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.reportingPod0.metadata.labels.app }}
+        interface: {{ .Values.reportingPod0.metadata.labels.interface }}
+    spec:
+      {{- if .Values.reportingPod0.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.reportingPod0.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if if .Values.global.imagePullSecrets}}
+      imagePullSecrets:
+      {{- range $.Values.global.imagePullSecrets}}
+        - name: {{ .Values.global.imagePullSecrets.name}}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext:
+      {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+      {{- end }}
+      {{- if .Values.global.securityContext.fsGroup }}
+          fsGroup: {{ .Values.global.securityContext.fsGroup }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.reportingPod0.containers }}
+      containers:
+      {{- range $.Values.reportingPod0.containers }}
+      {{- if .Values.reportingPod0.containers.name }}
+      - name: {{ .Values.reportingPod0.containers.name }}
+      {{- end }}
+      {{- if .Values.reportingPod0.containers.image }}
+        image: "{{ .Values.reportingPod0.containers.image }}:{{ .Values.reportingPod0.containers.tag }}"
+      {{- end }}
+      {{- if .Values.reportingPod0.containers.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.reportingPod0.containers.imagePullPolicy }}
+      {{- end }}
+      {{- if .Values.global.lifecycle }}
+        lifecycle:
+        {{- if .Values.global.lifecycle.preStop }}
+          preStop:
+            exec:
+              command:
+              - {{ .Values.global.lifecycle.command }}
+              - preStop
+        {{- end }} #end  prestop
+        {{- end }} #end lifecycle
+        {{- if .Values.reportingPod0.containers.ports }}
+        ports:
+        {{- range $.Values.reportingPod0.containers.ports }}
+        {{- if .Values.reportingPod0.containers.ports.containerPort }}
+        - containerPort: {{ .Values.reportingPod0.containers.ports.containerPort }}
+        {{- end }}
+        {{- if .Values.reportingPod0.containers.ports.name }}
+          name: {{ .Values.reportingPod0.containers.ports.name }}
+        {{- end }}
+        {{- end }} # end range ports
+        {{- end }} #end if ports
+        {{- if .Values.reportingPod0.containers.resources }}
+        resources: 
+        {{- if .Values.reportingPod0.containers.resources.limits}}
+          limits: 
+            {{- if .Values.nosqlPod0.containers.resources.limits.cpu}}
+            cpu: {{ .Values.nosqlPod0.containers.resources.limits.cpu }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.reportingPod0.containers.resources.requests }}
+          requests:
+            {{- if .Values.reportingPod0.containers.resources.requests.cpu }}
+            cpu: {{ .Values.reportingPod0.containers.resources.requests.cpu }}
+            {{- end }}
+        {{- end }}
+      {{- end }} # end if resources 
+        {{- if .Values.reportingPod0.containers.env }}
+        env:
+        {{- range $.Values.reportingPod0.containers.env }}
+          - name: {{.Values.reportingPod0.containers.env.name}}
+            {{- if .Values.reportingPod0.containers.env.value }}
+            value: {{ .Values.reportingPod0.containers.env.value | quote }}
+            {{- end }}
+            {{- if .Values.reportingPod0.containers.env.valueFrom }}
+             valueFrom:
+               {{- if .Values.reportingPod0.containers.env.valueFrom.fieldRef}}
+               fieldRef: 
+                 {{- if .Values.reportingPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                 fieldPath: {{ .Values.reportingPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                 {{- end }}
+               {{- end}}
+            {{- end }}
+          {{- end }} # end range env 
+          {{- end }} # end if env
+        {{- if .Values.reportingPod0.containers.volumeMounts }}
+        volumeMounts:
+        {{- range $.Values.reportingPod0.containers.volumeMounts }}
+        {{- if .Values.reportingPod0.containers.volumeMounts.name }}
+        - name: {{ .Values.reportingPod0.containers.volumeMounts.name }}
+        {{- end }}
+        {[- if .Values.reportingPod0.containers.volumeMounts.mountPath ]}
+          mountPath: {{ .Values.reportingPod0.containers.volumeMounts.mountPath }}
+        {{- end }}
+        {{- if .Values.reportingPod0.containers.volumeMounts.subPath }}
+          subPath: {{ .Values.reportingPod0.containers.volumeMounts.subPath }}
+        {{- end }}
+        {{- end }} #end range volumeMounts 
+        {{- end }} #end if volumeMounts
+        {{- end }} #end range container 
+        {{- end }} #end if containers
+      {{- if .Values.reportingPod0.volumes }}
+      volumes:
+      {{- range $.Values.reportingPod0.volumes }}
+      - name: {{ .Values.reportingPod0.volumes.name }}
+      {{- if .Values.reportingPod0.volumes.secret }}
+        secret:
+        {{- if .Values.reportingPod0.volumes.secret.secretName }}
+          secretName: {{ .Values.reportingPod0.volumes.secret.secretName }}
+        {{- end }}
+        {{- if .Values.reportingPod0.volumes.secret.defaultMode }}
+          defaultMode: {{ .Values.reportingPod0.volumes.secret.defaultMode }}
+        {{- end }}
+      {{- end }} #end if secret 
+      {{- end }} #end range volumes 
+      {{- end }} #end if volumes 
+  {{- if .Values.reportingPod0.volumeClaimTemplates }}
+  volumeClaimTemplates:
+  {{- range $.Values.reportingPod0.volumeClaimTemplates }}
+  - metadata:
+    {{- if .Values.reportingPod0.volumeClaimTemplates.metadata.name }}
+      name: {{ .Values.reportingPod0.volumeClaimTemplates.metadata.name }}
+    {{- end }}
+    {{- if .Values.reportingPod0.volumeClaimTemplates.spec}}
+    spec:
+      {{- if .Values.reportingPod0.volumeClaimTemplates.spec.accessModes }}
+      accessModes: {{ .Values.reportingPod0.volumeClaimTemplates.spec.accessModes }}
+      {{- end }}
+      {{- if  .Values.reportingPod0.volumeClaimTemplates.spec.storageClassName }}
+      storageClassName: {{ .Values.reportingPod0.volumeClaimTemplates.spec.storageClassName }}
+      {{- end }}
+      {{- if  .Values.reportingPod0.volumeClaimTemplates.spec.resources }}
+      resources:
+          {{- if $.Values.reportingPod0.volumeClaimTemplates.spec.resources.requests }}
+        requests:
+           {{- if $.Values.reportingPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          storage: {{- if $.Values.reportingPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiVersion}}
+kind: StatefulSet
+metadata:
+  name: {{ .Values.sqlPod0.appName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  serviceName: {{ .Values.sqlPod0.serviceName }}
+  replicas:  {{ .Values.sqlPod0.replicas }}
+  selector:
+    matchLabels:
+      app:  {{ .Values.sqlPod0.metadata.labels.app }}
+      interface: {{ .Values.sqlPod0.metadata.labels.interface }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.sqlPod0.metadata.labels.app }}
+        interface: {{ .Values.sqlPod0.metadata.labels.interface }}
+    spec:
+      {{- if .Values.sqlPod0.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.sqlPod0.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if if .Values.global.imagePullSecrets}}
+      imagePullSecrets:
+      {{- range $.Values.global.imagePullSecrets}}
+        - name: {{ .Values.global.imagePullSecrets.name}}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext:
+      {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+      {{- end }}
+      {{- if .Values.global.securityContext.fsGroup }}
+          fsGroup: {{ .Values.global.securityContext.fsGroup }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.sqlPod0.containers }}
+      containers:
+      {{- range $.Values.sqlPod0.containers }}
+      {{- if .Values.sqlPod0.containers.name }}
+      - name: {{ .Values.sqlPod0.containers.name }}
+      {{- end }}
+      {{- if .Values.sqlPod0.containers.image }}
+        image: "{{ .Values.sqlPod0.containers.image }}:{{ .Values.sqlPod0.containers.tag }}"
+      {{- end }}
+      {{- if .Values.sqlPod0.containers.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.sqlPod0.containers.imagePullPolicy }}
+      {{- end }}
+      {{- if .Values.global.lifecycle }}
+        lifecycle:
+        {{- if .Values.global.lifecycle.preStop }}
+          preStop:
+            exec:
+              command:
+              - {{ .Values.global.lifecycle.command }}
+              - preStop
+        {{- end }} #end  prestop
+        {{- end }} #end lifecycle
+        {{- if .Values.sqlPod0.containers.securityContext }}
+        securityContext:
+        {{- if .Values.sqlPod0.containers.securityContext.runAsUser }}
+          runAsUser: {{ .Values.sqlPod0.containers.securityContext.runAsUser }}
+        {{- end }}
+        {{- if .Values.sqlPod0.containers.ports }}
+        ports:
+        {{- range $.Values.sqlPod0.containers.ports }}
+        {{- if .Values.sqlPod0.containers.ports.containerPort }}
+        - containerPort: {{ .Values.sqlPod0.containers.ports.containerPort }}
+        {{- end }}
+        {{- if .Values.sqlPod0.containers.ports.name }}
+          name: {{ .Values.sqlPod0.containers.ports.name }}
+        {{- end }}
+        {{- end }} # end range ports
+        {{- end }} #end if ports
+        {{- if .Values.sqlPod0.containers.resources }}
+        resources: {{ .Values.sqlPod0.containers.resources }}
+        {{- end }}
+        {{- if .Values.sqlPod0.containers.env }}
+        env:
+        {{- range $.Values.sqlPod0.containers.env }}
+          - name: {{.Values.sqlPod0.containers.env.name}}
+            {{- if .Values.sqlPod0.containers.env.value }}
+            value: {{ .Values.sqlPod0.containers.env.value | quote }}
+            {{- end }}
+            {{- if .Values.sqlPod0.containers.env.valueFrom }}
+             valueFrom:
+               {{- if .Values.sqlPod0.containers.env.valueFrom.fieldRef}}
+               fieldRef: 
+                 {{- if .Values.sqlPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                 fieldPath: {{ .Values.sqlPod0.containers.env.valueFrom.fieldRef.fieldPath }}
+                 {{- end }}
+               {{- end}}
+            {{- end }}
+          {{- end }} # end range env 
+          {{- end }} # end if env
+        {{- if .Values.sqlPod0.containers.volumeMounts }}
+        volumeMounts:
+        {{- range $.Values.sqlPod0.containers.volumeMounts }}
+        {{- if .Values.sqlPod0.containers.volumeMounts.name }}
+        - name: {{ .Values.sqlPod0.containers.volumeMounts.name }}
+        {{- end }}
+        {[- if .Values.sqlPod0.containers.volumeMounts.mountPath ]}
+          mountPath: {{ .Values.sqlPod0.containers.volumeMounts.mountPath }}
+        {{- end }}
+        {{- if .Values.sqlPod0.containers.volumeMounts.subPath }}
+          subPath: {{ .Values.sqlPod0.containers.volumeMounts.subPath }}
+        {{- end }}
+        {{- end }} #end range volumeMounts 
+        {{- end }} #end if volumeMounts
+        readinessProbe:
+          exec:
+            command:
+            {{- range $.Values.sqlPod0.containers.readinessProbe.command }}
+            - {{ .Values.sqlPod0.containers.readinessProbe.command }}
+            {{- end }}
+          {{- if .Values.sqlPod0.containers.readinessProbe.failureThreshold }}
+          failureThreshold: {{ .Values.sqlPod0.containers.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.sqlPod0.containers.readinessProbe.initialDelaySeconds }}
+          initialDelaySeconds: {{ .Values.sqlPod0.containers.readinessProbe.initialDelaySeconds }}
+          {{- end }}
+          {{- if .Values.sqlPod0.containers.readinessProbe.periodSeconds }}
+          periodSeconds: {{ .Values.sqlPod0.containers.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.sqlPod0.containers.readinessProbe.successThreshold }}
+          successThreshold: {{ .Values.sqlPod0.containers.readinessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.sqlPod0.containers.readinessProbe.timeoutSeconds }}
+          timeoutSeconds: {{ .Values.sqlPod0.containers.readinessProbe.timeoutSeconds }}
+          {{- end }}
+        {{- end }} #end if readinessProbe 
+        {{- end }} #end range container 
+        {{- end }} #end if containers
+      {{- if .Values.sqlPod0.volumes }}
+      volumes:
+      {{- range $.Values.sqlPod0.volumes }}
+      - name: {{ .Values.sqlPod0.volumes.name }}
+      {{- if .Values.sqlPod0.volumes.secret }}
+        secret:
+        {{- if .Values.sqlPod0.volumes.secret.secretName }}
+          secretName: {{ .Values.sqlPod0.volumes.secret.secretName }}
+        {{- end }}
+        {{- if .Values.sqlPod0.volumes.secret.defaultMode }}
+          defaultMode: {{ .Values.sqlPod0.volumes.secret.defaultMode }}
+        {{- end }}
+      {{- end }} #end if secret 
+      {{- end }} #end range volumes 
+      {{- end }} #end if volumes 
+  {{- if .Values.sqlPod0.volumeClaimTemplates }}
+  volumeClaimTemplates:
+  {{- range $.Values.sqlPod0.volumeClaimTemplates }}
+  - metadata:
+    {{- if .Values.sqlPod0.volumeClaimTemplates.metadata.name }}
+      name: {{ .Values.sqlPod0.volumeClaimTemplates.metadata.name }}
+    {{- end }}
+    {{- if .Values.sqlPod0.volumeClaimTemplates.spec}}
+    spec:
+      {{- if .Values.sqlPod0.volumeClaimTemplates.spec.accessModes }}
+      accessModes: {{ .Values.sqlPod0.volumeClaimTemplates.spec.accessModes }}
+      {{- end }}
+      {{- if  .Values.sqlPod0.volumeClaimTemplates.spec.storageClassName }}
+      storageClassName: {{ .Values.sqlPod0.volumeClaimTemplates.spec.storageClassName }}
+      {{- end }}
+      {{- if  .Values.sqlPod0.volumeClaimTemplates.spec.resources }}
+      resources:
+          {{- if $.Values.sqlPod0.volumeClaimTemplates.spec.resources.requests }}
+        requests:
+           {{- if $.Values.sqlPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          storage: {{- if $.Values.sqlPod0.volumeClaimTemplates.spec.resources.requests.storage }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+
