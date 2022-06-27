@@ -1,0 +1,253 @@
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  name: {{ .Values.cacheSvc0.metadata.name }}
+  labels:
+    app: {{ .Values.cacheSvc0.metadata.labels.app }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.cacheSvc0.spec.clusterIP }}
+  clusterIP: {{ .Values.cacheSvc0.spec.clusterIP }}
+  {{- end }}
+  {{- if .Values.cacheSvc0.spec.ports }}
+  ports:
+  {{- range $.Values.cacheSvc0.spec.ports }}
+    {{- if .Values.cacheSvc0.spec.ports.name }}
+  - name: {{ .Values.cacheSvc0.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.cacheSvc0.spec.ports.port }}
+    port: {{ .Values.cacheSvc0.spec.ports.port }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.cacheSvc0.spec.selector }}
+  selector:
+    interface: {{ .Values.cacheSvc0.spec.selector.interface }}
+  {{- end }}
+  {{- if .Values.cacheSvc0.status }}
+  status: {{ .Values.cacheSvc0.status }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  name: {{ .Values.cassSvc0.metadata.name }}
+  labels:
+    app: {{ .Values.cassSvc0.metadata.labels.app }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.cassSvc0.spec.clusterIP }}
+  clusterIP: {{ .Values.cassSvc0.spec.clusterIP }}
+  {{- end }}
+  {{- if .Values.cassSvc0.spec.ports }}
+  ports:
+  {{- range $.Values.cassSvc0.spec.ports }}
+  - port: {{ .Values.cassSvc0.spec.ports.port }}
+    {{- if .Values.cassSvc0.spec.ports.targetPort }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.cassSvc0.spec.selector }}
+  selector:
+    interface: {{ .Values.cassSvc0.spec.selector.interface }}
+  {{- end }}
+  {{- if .Values.cassSvc0.status }}
+  status: {{ .Values.cassSvc0.status }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.cmsvc0.serviceName }}
+  name: {{ .Values.cmsvc0.appName }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  type: {{ .Values.cmsvc0.spec.type }}
+   {{- if .Values.cmsvc0.ports}}
+  ports:
+    {{- range $.Values.cmsvc0.spec.ports }}
+    {{- if .Values.cmsvc0.spec.ports.name }}
+  - name: {{ .Values.cmsvc0.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.cmsvc0.spec.ports.port }}
+    port: {{ .Values.cmsvc0.spec.ports.port }}
+    {{- end }}
+    {{- if .Values.cmsvc0.spec.ports.protocol }}
+    protocol: {{ .Values.cmsvc0.spec.ports.protocol }}
+    {{- end }}
+    {{- if .Values.cmsvc0.spec.ports.targetPort }}
+    targetPort: {{ .Values.cmsvc0.spec.ports.targetPort }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+{{- if .Values.cmsvc0.status}}
+status:
+{{- if .Values.cmsvc0.status.loadBalancer }}
+  loadBalancer: {}
+{{- end }}
+{{- end }}
+
+---
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  name: {{ .Values.logSvc0.metadata.name }}
+  labels:
+    app: {{ .Values.logSvc0.metadata.labels.app }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.logSvc0.spec.clusterIP }}
+  clusterIP: {{ .Values.logSvc0.spec.clusterIP }}
+  {{- end }}
+  {{- if .Values.logSvc0.spec.ports }}
+  ports:
+  {{- range $.Values.logSvc0.spec.ports }}
+    {{- if .Values.logSvc0.spec.ports.name }}
+  - name: {{ .Values.logSvc0.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.logSvc0.spec.ports.port }}
+    port: {{ .Values.logSvc0.spec.ports.port }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.logSvc0.spec.selector }}
+  selector:
+    interface: {{ .Values.logSvc0.spec.selector.interface }}
+  {{- end }}
+  {{- if .Values.logSvc0.status }}
+  status: {{ .Values.logSvc0.status }}
+  {{- end }}
+
+--- 
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  name: {{ .Values.mysqlSvc0.metadata.name }}
+  labels:
+    app: {{ .Values.mysqlSvc0.metadata.labels.app }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.mysqlSvc0.spec.clusterIP }}
+  clusterIP: {{ .Values.mysqlSvc0.spec.clusterIP }}
+  {{- end }}
+  {{- if .Values.mysqlSvc0.spec.ports }}
+  ports:
+  {{- range $.Values.mysqlSvc0.spec.ports }}
+    {{- if .Values.mysqlSvc0.spec.ports.name }}
+  - name: {{ .Values.mysqlSvc0.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.mysqlSvc0.spec.ports.port }}
+    port: {{ .Values.mysqlSvc0.spec.ports.port }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.mysqlSvc0.spec.selector }}
+  selector:
+    interface: {{ .Values.mysqlSvc0.spec.selector.interface }}
+  {{- end }}
+  {{- if .Values.mysqlSvc0.status }}
+  status: {{ .Values.mysqlSvc0.status }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  name: {{ .Values.reportingSvc.metadata.name }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.reportingSvc.spec.clusterIP }}
+  clusterIP: {{ .Values.reportingSvc.spec.clusterIP }}
+  {{- end }}
+  {{- if .Values.reportingSvc.spec.ports }}
+  ports:
+  {{- range $.Values.reportingSvc.spec.ports }}
+    {{- if .Values.reportingSvc.spec.ports.name }}
+  - name: {{ .Values.reportingSvc.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.reportingSvc.spec.ports.port }}
+    port: {{ .Values.reportingSvc.spec.ports.port }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.reportingSvc.spec.selector }}
+  selector:
+    interface: {{ .Values.reportingSvc.spec.selector.interface }}
+  {{- end }}
+  {{- if .Values.reportingSvc.status }}
+  status: {{ .Values.reportingSvc.status }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  name: {{ .Values.reportingSvcExternal.metadata.name }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.reportingSvcExternal.spec.type }}
+  type: {{ .Values.reportingSvcExternal.spec.type }}
+  {{- end }}
+  {{- if .Values.reportingSvcExternal.spec.selector }}
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ .Values.reportingSvcExternal.spec.selector.podName}}
+  {{- end }}
+  {{- if .Values.reportingSvcExternal.spec.ports }}
+  ports:
+  {{- range $.Values.reportingSvcExternal.spec.ports }}
+    {{- if .Values.reportingSvcExternal.spec.ports.name }}
+  - name: {{ .Values.reportingSvcExternal.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.reportingSvcExternal.spec.ports.port }}
+    port: {{ .Values.reportingSvcExternal.spec.ports.port }}
+    {{- end }}
+    {{- if .Values.reportingSvcExternal.spec.ports.protocol }}
+    protocol: {{ .Values.reportingSvcExternal.spec.ports.protocol }}
+    {{- end }}
+    {{- if .Values.reportingSvcExternal.spec.ports.targetPort }}
+    targetPort: {{ .Values.reportingSvcExternal.spec.ports.targetPort }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.reportingSvcExternal.status }}
+  status: 
+  {{- if .Values.reportingSvcExternal.status-loadBalancer }}
+    loadBalancer: {{ .Values.reportingSvcExternal.status-loadBalancer }}
+  {{- end }}
+  {{- end }}
+
+---
+apiVersion: {{ .Values.global.apiSvcVersion }}
+kind: Service
+metadata:
+  labels:
+    app: {{ .Values.reportingSvcExternal.metadata.labels.app }}
+  name: {{ .Values.reportingSvcExternal.metadata.name }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  {{- if .Values.reportingSvcExternal.spec.clusterIP }}
+  clusterIP: {{ .Values.reportingSvcExternal.spec.clusterIP }}
+  {{- end }}
+  {{- if .Values.reportingSvcExternal.spec.ports }}
+  ports:
+  {{- range $.Values.reportingSvcExternal.spec.ports }}
+    {{- if .Values.reportingSvcExternal.spec.ports.name }}
+  - name: {{ .Values.reportingSvcExternal.spec.ports.name | quote }}
+    {{- end }}
+    {{- if .Values.reportingSvcExternal.spec.ports.port }}
+    port: {{ .Values.reportingSvcExternal.spec.ports.port }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.reportingSvcExternal.spec.selector }}
+  selector:
+    interface: {{ .Values.reportingSvcExternal.spec.selector.interface}}
+  {{- end }}
+  {{- if .Values.reportingSvcExternal.status }}
+  status: 
+  {{- if .Values.reportingSvcExternal.status-loadBalancer }}
+    loadBalancer: {{ .Values.reportingSvcExternal.status-loadBalancer }}
+  {{- end }}
+  {{- end }}

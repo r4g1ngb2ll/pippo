@@ -1,0 +1,82 @@
+{{- if .Values.tm.autoscaling.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: "{{ .Values.global.namespace}}-tm"
+spec:
+  scaleTargetRef:
+    apiVersion: {{ .Values.global.apiVersion }}
+    kind: Deployment
+    name: {{ include "test_chart.fullname" . }}
+  minReplicas: {{ .Values.tm.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.tm.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.tm.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ .Values.tm.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.autoscaling.tm.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ .Values.autoscaling.tm.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+
+{{- if .Values.logPod0.autoscaling.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: "{{ .Values.global.namespace}}-logPod0"
+spec:
+  scaleTargetRef:
+    apiVersion: {{ .Values.global.apiVersion }}
+    kind: Deployment
+    name: {{ include "test_chart.fullname" . }}
+  minReplicas: {{ .Values.logPod0.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.logPod0.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.logPod0.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ .Values.logPod0.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.autoscaling.logPod0.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ .Values.autoscaling.logPod0.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+
+---
+{{- if .Values.cachePod0.autoscaling.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: "{{ .Values.global.namespace}}-cachePod0"
+spec:
+  scaleTargetRef:
+    apiVersion: {{ .Values.global.apiVersion }}
+    kind: Deployment
+    name: {{ include "test_chart.fullname" . }}
+  minReplicas: {{ .Values.cachePod0.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.cachePod0.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.cachePod0.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ .Values.cachePod0.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.autoscaling.cachePod0.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ .Values.autoscaling.cachePod0.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

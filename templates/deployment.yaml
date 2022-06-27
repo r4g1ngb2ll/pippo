@@ -1,165 +1,269 @@
-apiVersion: apps/v1
+apiVersion: {{ .Values.global.apiVersion }}
 kind: Deployment
 metadata:
-  name: cm-deploy-0
+  name: {{ .Values.cm.appName }}
   labels:
-    app: cm-deploy-0
-    namespace: {{ .Values.namespace }}
+    app: {{ .Values.cm.appName }}
+    namespace: {{ .Values.global.namespace }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.cm.replicaCount }}
   selector:
     matchLabels:
-      service: {{ .Values.service.name.cm }}
-      interface: {{ .Values.service.interface.name }}
+      service: {{ .Values.cm.service.name }}
+      interface: {{ .Values.cm.interface }}
   template:
     metadata:
       labels:
-        service: {{ .Values.service.name }}
-        interface: {{ .Values.service.interface.name }}
+        service: {{ .Values.cm.service.name }}
+        interface: {{ .Values.cm.interface }}
     spec:
-      restartPolicy: Always
+    {{- if .Values.cm.restartPolicy }}
+      restartPolicy:  {{ .Values.cm.restartPolicy }}
+    {- end }
+    {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets: 
-        - name: {{ .Values.imagePullSecrets.name }}
+        {{- if .Values.global.imagePullSecrets.name }}
+        - name: {{ .Values.global.imagePullSecrets.name }}
+        {{- end }}
+    {{- end }}
+    {{- if .Values.cm.securityContext }}
       securityContext:
-          runAsUser: {{ .Values.securityContext.runAsUser }}
-          fsGroup: {{ .Values.securityContext.fsGroup }}
+      {{- if .Values.cm.securityContext.runAsUser }}
+          runAsUser: {{ .Values.cm.securityContext.runAsUser }}
+      {{- end }}
+      {{- if .Values.cm.securityContext.fsGroup }}
+          fsGroup: {{ .Values.cm.securityContext.fsGroup }}
+      {{- end }}
+    {{- end }}
+      {{- if  .Values.cm.ingress.hostAliases }}
       hostAliases:
-      - ip: {{ .Values.ingress.hostAliases.ip }}
-        hostnames: {{ - range $.Values.ingress.hostAliases.hostnames }}
+      - ip: {{ .Values.cm.ingress.hostAliases.ip | quote }}
+        hostnames: {{ - range $.Values.cm.ingress.hostAliases.hostnames | quote }}
+      {{- end }}
+      {{- if .Values.cm.containers}}
       containers: 
-      - name: cm
-        image: {{ .Values.image.repository }} 
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+      {{- range $.Values.cm.containers }}
+      - name: {{ .Values.cm.containers.imageName }}
+        {{- if .Values.cm.containers.image }}
+        image: "{{ .Values.cm.containers.image.repository }}:{{ default "latest" .Values.cm.containers.image.tag }}" 
+        {{- end }}
+        {{- if .Values.cm.containers.image.pullPolicy }}
+        imagePullPolicy: {{ .Values.cm.containers.image.pullPolicy }}
+        {{- end }}
         lifecycle:
           preStop:
             exec:
               command: 
-                - {{ .Values.lifecycle.command }}
+                - {{ .Values.global.lifecycle.command }}
                 - preStop
+        {{- if .Values.cm.securityContext }}       
         securityContext:
-          runAsUser: {{ .Values.securityContext.runAsUser }}
+          {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
         ports:
-      {{- range $key, $val := $.Values.ports.cm }}
+      {{- range $key, $val := $.Values.cm.ports }}
           - containerPort: {{ $key }}
             name: {{ $val }}
       {{- end }}
         resources: {}
         env:
-      {{- range $key, $val := $.Values.env.cm }}
-          - name: {{ $key }}
-            value: {{ $val }}
-      {{- end }}
-          - name: POD_IP
+      {{- range $.Values.cm.env }}
+          - name: {{ .Values.cm.env.name }}
+          {{- if .Values.cm.env.value }}
+            value: {{ .Values.cm.env.value | quote }}
+          {{- end }}
+          {{- if .Values.cm.env.valueFrom }}
             valueFrom:
+              {{- if .Values.cm.env.fieldRef }}
               fieldRef:
-                fieldPath: status.podIP
+                {{- if .Values.cm.env.fieldPath }}
+                fieldPath: {{.Values.cm.env.fieldPath}}
+                {{- end }}
+              {{- end }}
+          {{- end }}
+      {{- end }}
+
+        {{- if .Values.cm.readinessProbe }}
         readinessProbe:
           exec:
             command:
-            - {{ .Values.readinessProbe.lifecycle.command }}
+            - {{ .Values.global.lifecycle.command }}
             - isRegistryReady
-          failureThreshold: {{ .Values.readinessProbe.cm.failureThreshold }}
-          initialDelaySeconds: {{ .Values.readinessProbe.cm.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readinessProbe.cm.periodSeconds }}
-          successThreshold: {{ .Values.readinessProbe.cm.successThreshold }}
-          timeoutSeconds: {{ .Values.readinessProbe.cm.timeoutSeconds }}
+          {{- if .Values.cm.readinessProbe.failureThreshold }}
+          failureThreshold: {{ .Values.cm.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.cm.readinessProbe.initialDelaySeconds }}
+          initialDelaySeconds: {{ .Values.cm.readinessProbe.initialDelaySeconds }}
+          {{- end }}
+          {{- if .Values.cm.readinessProbe.periodSeconds }}
+          periodSeconds: {{ .Values.cm.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.cm.readinessProbe.successThreshold }}
+          successThreshold: {{ .Values.cm.readinessProbe.successThreshold }}
+          {{- end }}  
+          {{- if .Values.cm.readinessProbe.timeoutSeconds }}
+          timeoutSeconds: {{ .Values.cm.readinessProbe.timeoutSeconds }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.cm.volumeMounts }} 
         volumeMounts:
-        {{- range $.Values.volumeMounts.cm }}
-        - name: {{ .Values.volumeMounts.cm.name }}
-        - mountPath: {{ .Values.volumeMounts.cm.mountPath }}
-        {{- if gt 1 $.Values.volumeMounts.cm.count }}
-        - subPath: {{ .Values.volumeMounts.cm.subPath }}
-        {{- if gt 5 $.Values.volumeMounts.cm.count }}
-        - readOnly: true
+        {{- range $.Values.cm.volumeMounts }}
+        - name: {{ .Values.cm.volumeMounts.name }}
+        - mountPath: {{ .Values.cm.volumeMounts.mountPath }}
+        {{- if .Values.cm.volumeMounts.subPath }}
+        - subPath: {{ .Values.cm.volumeMounts.subPath }}
+        {{- end }}
+        {{- if .Values.cm.volumeMounts.readOnly }}
+        - readOnly:  {{ .Values.cm.volumeMounts.readOnly }}
         {{- end }}
         {{- end }}
         {{- end }}
+      {{- end }}
+      {{- if .Values.cm.volumes }} 
       volumes: 
-      - name: cm-crt-vol
+        {{- range $.Values.cm.volumes }}
+      - name: {{ .Values.cm.volumes.name }}
         secret:
-          secretName: cm-crt
-        {{- range $.Values.volumes.cm }}
-      - name: {{ .Values.volumes.cm.name }}
-        secret:
-          secretName: {{ .Values.volumeMounts.cm.secretName }}
-          defaultMode: {{ .Values.volumeMounts.cm.defaultMode }}
+        {{- if .Values.cm.volumes.secretName }}
+          secretName: {{ .Values.cm.volumes.secretName }}
+        {{- end }}
+        {{- if .Values.cm.volumeMounts.defaultMode }}
+          defaultMode: {{ .Values.cm.volumeMounts.defaultMode }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
 status: {}
 
---------------------------------------------------------
+---
 
-apiVersion: apps/v1
+apiVersion: {{ .Values.global.apiVersion }}
 kind: Deployment
 metadata:
-  name: tm-deploy-0
-  labels:
-    app: tm-deploy-0
-    namespace: {{ .Values.namespace }}
+  name: {{ .Values.tm.appName }}
+    app: {{ .Values.tm.appName }}
+    namespace: {{ .Values.global.namespace }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.tm.replicaCount }}
   selector:
     matchLabels:
-      app: tm-deploy-0
+      app: {{ .Values.tm.appName }}
   template:
     metadata:
-      name:  tm-deploy-0
+      name:  {{ .Values.tm.appName }}
       labels:
-        service: {{ .Values.service.name.tm }}
-        app:  tm-deploy-0
+        service: {{ .Values.tm.service.name }}
+        app:  {{ .Values.tm.appName }}
     spec:
-      restartPolicy: Always
+      {{- if .Values.tm.restartPolicy }}
+      restartPolicy: {{ .Values.tm.restartPolicy }}
+      {{- end }}
       imagePullSecrets: 
-        - name: {{ .Values.imagePullSecrets.name }}
+        - name: {{ .Values.global.imagePullSecrets.name }}
       securityContext:
-          runAsUser: {{ .Values.securityContext.runAsUser }}
-          fsGroup: {{ .Values.securityContext.fsGroup }}
+          {{- if .Values.global.securityContext.runAsUser }}
+          runAsUser: {{ .Values.global.securityContext.runAsUser }}
+          {{- end }}
+          {{- if .Values.global.securityContext.fsGroup }}
+          fsGroup: {{ .Values.global.securityContext.fsGroup }}
+          {{- end }}
+      {{- if .Values.tm.containers}}
       containers: 
-      - name: tm-svc-0
-        image: {{ .Values.image.repository }} 
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+      {{- range $.Values.tm.containers }}
+      - name: {{ .Values.tm.containers.imageName }}
+       {{- if .Values.tm.containers.image }}
+        image: "{{ .Values.tm.containers.repository }}:{{ default "latest" .Values.tm.containers.tag}}"
+       {{- end }} 
+       {{- if .Values.tm.containers.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.tm.containers.pullPolicy }}
+       {{- end }}
         lifecycle:
           preStop:
             exec:
               command: 
-                - {{ .Values.readinessProbe.lifecycle.command }}
+                - {{ .Values.global.lifecycle.command }}
                 - preStop
+      {{ - if .Values.tm.securityContext }}
         securityContext:
-          runAsUser: {{ .Values.securityContext.runAsUser }}
+          runAsUser: {{ .Values.tm.securityContext.runAsUser }}
+      {{ - end }}
+      {{- end }}
         ports:
-      {{- range $key, $val := $.Values.ports.tm }}
+      {{- range $key, $val := $.Values.tm.ports }}
           - containerPort: {{ $key }}
             name: {{ $val }}
       {{- end }}
         resources: {}
         env:
-      {{- range $key, $val := $.Values.env.tm }}
-          - name: {{ $key }}
-            value: {{ $val }}
-      {{- end }}
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
+      {{- range $.Values.tm.env }}
+          - name: {{ .Values.tm.env.name }}
+          {{- if .Values.tm.env.value }}
+            value: {{ .Values.tm.env.value | quote }}
+          {{- end }}
+          {{- if .Values.tm.env.valueFrom }}
+            valueFrom: {{ .Values.tm.env.valueFrom }}
+              {{- if .Values.tm.env.valueFrom.fieldRef }}
+              fieldRef: {{ .Values.tm.env.valueFrom.fieldRef }}
+                {{- if .Values.tm.env.valueFrom.fieldRef.fieldPath }}
+                fieldPath: {{ .Values.tm.env.valueFrom.fieldRef.fieldPath }}
+                {{- end }}
+              {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.tm.readinessProbe }}
         readinessProbe:
+          {{- if .Values.tm.readinessProbe.httpGet }}
           httpGet:
-            path: /mashping
-            port: 20080
-          failureThreshold: {{ .Values.readinessProbe.tm.failureThreshold }}
-          initialDelaySeconds: {{ .Values.readinessProbe.tm.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readinessProbe.tm.periodSeconds }}
-          successThreshold: {{ .Values.readinessProbe.tm.successThreshold }}
-          timeoutSeconds: {{ .Values.readinessProbe.tm.timeoutSeconds }}
+            {{ - if .Values.tm.readinessProbe.httpGet.path }}
+            path: {{ .Values.tm.readinessProbe.httpGet.path }}
+            {{- end }}
+            {{ - if .Values.tm.readinessProbe.httpGet.port }}
+            port: {{ .Values.tm.readinessP.robe.httpGet.port }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.tm.readinessProbe.failureThreshold }}
+          failureThreshold: {{ .Values.tm.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.tm.readinessProbe.initialDelaySeconds }}
+          initialDelaySeconds: {{ .Values.tm.readinessProbe.initialDelaySeconds }}
+          {{- end }}
+          {{- if .Values.tm.readinessProbe.periodSeconds }}
+          periodSeconds: {{ .Values.tm.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.tm.readinessProbe.successThreshold }}
+          successThreshold: {{ .Values.tm.readinessProbe.successThreshold }}
+          {{- end }}  
+          {{- if .Values.tm.readinessProbe.timeoutSeconds }}
+          timeoutSeconds: {{ .Values.tm.readinessProbe.timeoutSeconds }}
+          {{- end }}
+        {{- end }}
+         {{- if .Values.tm.volumeMounts }} 
         volumeMounts:
-        {{- range $.Values.volumeMounts.tm }}
-        - name: {{ .Values.volumeMounts.tm.name }}
-        - mountPath: {{ .Values.volumeMounts.tm.mountPath }}
-        {{- if gt 1 $.Values.volumeMounts.tm.count }}
-        - subPath: {{ .Values.volumeMounts.tm.subPath }}
+        {{- range $.Values.tm.volumeMounts }}
+        - name: {{ .Values.tm.volumeMounts.name }}
+        - mountPath: {{ .Values.tm.volumeMounts.mountPath }}
+        {{- if .Values.tm.volumeMounts.subPath }}
+        - subPath: {{ .Values.tm.volumeMounts.subPath }}
         {{- end }}
         {{- end }}
+        {{- end }}
+       {{- end }}
+      {{ - if .Values.tm.volumes }}
       volumes: 
-        {{- range $.Values.volumes.tm }}
-      - name: {{ .Values.volumes.tm.name }}
+        {{- range $.Values.tm.volumes }}
+      - name: {{ .Values.tm.volumes.name }}
         secret:
-          secretName: {{ .Values.volumeMounts.tm.secretName }}
-          defaultMode: {{ .Values.volumeMounts.tm.defaultMode }}
+          secretName: {{ .Values.tm.volumeMounts.secretName }}
+          defaultMode: {{ .Values.tm.volumeMounts.defaultMode }}
+      {{- end }}
 status: {}
+
+---
+apiVersion: v1 
+kind: Namespace 
+metadata: 
+  labels: 
+    name: {{ .Values.global.namespace }}
+  name: {{ .Values.global.namespace }}  
