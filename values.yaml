@@ -1,62 +1,54 @@
-replicaCount: 1
-namespace: mashery
+global:
+  apiVersion: apps/v1
+  apiSvcVersion: v1
+  namespace: mashery
+  imagePullSecrets: 
+    - name: tmgc-registry-key
+  lifecycle:
+    command: /usr/local/bin/tml-event-handler.sh
+  securityContext: 
+    runAsUser: 1001
+    fsGroup: 1001
 
-image:
-  repository: cloudsidecompany/tml-cm:v5.5.1.GA.1
-  pullPolicy: IfNotPresent
-  tag: ""
+cm: 
+  appName: cm-deploy-0
+  containers:
+  - imageName: cm
+    repository: cloudsidecompany/tml-cm
+    pullPolicy: IfNotPresent
+    tag: v5.5.1.GA.1
+    
+  restartPolicy: Always
+  replicaCount: 1
+  service:
+    name: cm-svc
+    type: ClusterIP
+    port: 80
+  interface: 
+    name: cm-svc-0
 
-imagePullSecrets: 
-  - name: tmgc-registry-key
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            fieldPath: test
+    hostAliases:
+        - ip: "127.0.0.1"
+          hostnames:
+          - "tm-api-v2-lb.mashery.com" 
+          - "api.mashery.com" 
+          - "platformapi.mashery.com"  
+          - "support.api.mashery.com"  
+          - "api-v2-reporting.mashery.com" 
+    tls: []
 
-securityContext: 
-  runAsUser: 1001
-  fsGroup: 1001
 
-service:
-  name: 
-    cm: cm-svc
-    tm: tm-svc
-  type: ClusterIP
-  port: 80
-
-interface:
-  name: cm-svc-0
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-          fieldPath: test
-  hostAliases:
-      - ip: "127.0.0.1"
-        hostnames:
-        - "tm-api-v2-lb.mashery.com" 
-        - "api.mashery.com" 
-        - "platformapi.mashery.com"  
-        - "support.api.mashery.com"  
-        - "api-v2-reporting.mashery.com" 
-  tls: []
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
-
-ports:
-  cm: 
+  ports:
     - containerPort: 9080
       name: agent-http
     - containerPort: 9443
@@ -69,18 +61,8 @@ ports:
       name: api-http
     - containerPort: 7443
       name: api-https
-  tm:
-    - containerPort: 9080
-      name: agent-http
-    - containerPort: 9443
-      name: agent-https
-    - containerPort: 20080
-      name: tm-http
-    - containerPort: 20443
-      name: tm-https
 
-env:
-  cm:
+  env:
     - name: TMG_RELEASE_VERSION
       value: "5.5.1"
     - name: TMG_RELEASE_SUFFIX
@@ -129,7 +111,156 @@ env:
       value: "dc1"
     - name: CASSANDRA_REPLICATION_FACTOR
       value: "1"
-  tm:
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+
+  readinessProbe:
+    failureThreshold: 5
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 10
+
+  volumeMounts:
+    - name: cm-resources-vol
+      mountPath: /opt/mashery/resources
+    - name: cm-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_cm_properties.json
+      subPath: tml_cm_properties.json
+    - name: cluster-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+      subPath: tml_cluster_properties.json
+    - name: zones-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+      subPath: tml_zones_properties.json
+    - name: papi-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_papi_properties.json
+      subPath: tml_papi_properties.json
+    - name: cm-jks-vol
+      mountPath: /etc/mashery-server-ssl/tml-cm.jks
+      subPath: tml-cm.jks
+      readOnly: true
+    - name: cm-crt-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml-cm-crt.pem
+      subPath: tml-cm-crt.pem
+      readOnly: true
+    - name: cm-key-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml-cm-key.pk8
+      subPath: tml-cm-key.pk8
+      readOnly: true
+
+  volumes:
+    - name: cm-crt-vol
+      secret:
+        secretName: cm-crt
+    - name: cm-resources-vol
+      secret:
+        secretName: cm-resource
+        defaultMode: 420
+    - name: cm-property-vol
+      secret:
+        secretName: cm-property
+        defaultMode: 420
+    - name: cluster-property-vol
+      secret:
+        secretName: cluster-property
+        defaultMode: 420
+    - name: zones-property-vol
+      secret:
+        secretName: zones-property
+        defaultMode: 420
+    - name: papi-property-vol
+      secret:
+        secretName: papi-property
+        defaultMode: 420
+    - name: cm-jks-vol
+      secret:
+        secretName: cm-jks
+        defaultMode: 420
+    - name: cm-key-vol
+      secret:
+        secretName: cm-key
+        defaultMode: 420
+
+tm:
+  appName: tm-deploy-0
+  replicaCount: 1
+  image:
+    name: tm-svc-0
+    repository: cloudsidecompany/tml-tm
+    pullPolicy: IfNotPresent
+    tag: v5.5.1.GA.1
+
+  service:  
+    name: tm-svc
+    type: ""
+    port:
+
+  restartPolicy: Always
+
+  containers:
+  - imageName: tm-svc-0
+    repository: cloudsidecompany/tml-tm:v5.5.1.GA.1
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  volumes:
+    - name: tm-resources-vol
+      secret:
+        secretName: tm-resource
+        defaultMode: 420
+    - name: tm-property-vol
+      secret:
+        secretName: tm-property
+        defaultMode: 420
+    - name: cluster-property-vol
+      secret:
+        secretName: cluster-property
+        defaultMode: 420
+    - name: zones-property-vol
+      secret:
+        secretName: zones-property
+        defaultMode: 420
+    - name: tm-jks-vol
+      secret:
+        secretName: tm-jks
+        defaultMode: 420
+    - name: tm-trust-jks-vol
+      secret:
+        secretName: tm-trust-jks
+        defaultMode: 420 
+  volumeMounts:
+    - name: tm-resources-vol
+      mountPath: /opt/mashery/resources
+    - name: tm-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_tm_properties.json
+      subPath: tml_tm_properties.json
+    - name: cluster-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+      subPath: tml_cluster_properties.json
+    - name: zones-property-vol
+      mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+      subPath: tml_zones_properties.json
+    - name: tm-jks-vol
+      mountPath: /etc/mashery-server-ssl/tml-tm.jks
+      subPath: tml-tm.jks
+    - name: tm-trust-jks-vol
+      mountPath: /etc/mashery-server-ssl/tml-tm-trust.jks
+      subPath: tml-tm-trust.jks
+
+  readinessProbe: 
+    httpGet:
+      path: /mashping
+      port: 20080
+    failureThreshold: 90
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+
+  env:
     - name: TMG_RELEASE_VERSION
       value: "5.5.1"
     - name: TMG_RELEASE_SUFFIX
@@ -160,93 +291,665 @@ env:
       value: "20080"
     - name: HTTPS_PORT
       value: "20443"
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+  
+  ports:
+    - containerPort: 9080
+      name: agent-http
+    - containerPort: 9443
+      name: agent-https
+    - containerPort: 20080
+      name: tm-http
+    - containerPort: 20443
+      name: tm-https
+  
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
 
-readinessProbe:
-  lifecycle:
-    command: /usr/local/bin/tml-event-handler.sh
-  cm:
-    failureThreshold: 5
-    initialDelaySeconds: 5
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 10
-  tm: 
-    failureThreshold: 90
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 5
 
-volumeMounts:
-  cm:
-    - count: 1
-      name: cm-resources-vol
-      mountPath: /opt/mashery/resources
-    - count: 2
-      name: cm-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_cm_properties.json
-      subPath: tml_cm_properties.json
-    - count: 3
-      name: cluster-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
-      subPath: tml_cluster_properties.json
-    - count: 4
-      name: zones-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
-      subPath: tml_zones_properties.json
-    - count: 5
-      name: papi-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_papi_properties.json
-      subPath: tml_papi_properties.json
-    - count: 6
-      name: cm-jks-vol
-      mountPath: /etc/mashery-server-ssl/tml-cm.jks
-      subPath: tml-cm.jks
-      readOnly: true
-    - count: 7
-      name: cm-crt-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml-cm-crt.pem
-      subPath: tml-cm-crt.pem
-      readOnly: true
-    - count: 8
-      name: cm-key-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml-cm-key.pk8
-      subPath: tml-cm-key.pk8
-      readOnly: true
-  tm:
-    - count: 1
-      name: tm-resources-vol
-      mountPath: /opt/mashery/resources
-    - count: 2
-      name: tm-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_tm_properties.json
-      subPath: tml_tm_properties.json
-    - count: 3
-      name: cluster-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
-      subPath: tml_cluster_properties.json
-    - count: 4
-      name: zones-property-vol
-      mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
-      subPath: tml_zones_properties.json
-    - count: 5
-      name: tm-jks-vol
-      mountPath: /etc/mashery-server-ssl/tml-tm.jks
-      subPath: tml-tm.jks
-    - count: 6
-      name: tm-trust-jks-vol
-      mountPath: /etc/mashery-server-ssl/tml-tm-trust.jks
-      subPath: tml-tm-trust.jks
+--- 
+#statefulset
 
-volumes:
-  cm:
-    - name: cm-resources-vol
+cachePod0:
+  appName: cache-set-0
+  serviceName: cache-svc-0
+  replicas: 1
+  podManagementPolicy: "Parallel"
+  metadata:
+    labels:
+      app: cache-svc
+      interface: cache-svc-0
+  terminationGracePeriodSeconds: 3
+  containers:
+  - name: cache-svc-0
+    image: cloudsidecompany/tml-cache
+    tag: v5.5.1.GA.1
+    imagePullPolicy: IfNotPresent
+    ports:
+      - containerPort: 9080
+        name: agent-http
+      - containerPort: 9443
+        name: agent-https
+      - containerPort: 11211
+        name: memcached
+      - containerPort: 11212
+        name: count
+      - containerPort: 11213
+        name: content
+      - containerPort: 11214
+        name: services
+      - containerPort: 11215
+        name: packager
+      - containerPort: 11216
+        name: httpsclient
+    env:
+      - name: TMG_RELEASE_VERSION
+        value: "5.5.1"
+      - name: TMG_RELEASE_SUFFIX
+        value: "GA"
+      - name: TMG_REGISTRY_HOST
+        value: "cass-set-0-0.cass-svc-0.mashery.svc.cluster.local"
+      - name: TMG_REGISTRY_HTTP_PORT
+        value: "8080"
+      - name: TMG_REGISTRY_HTTPS_PORT
+        value: "8443"
+      - name: TMG_CLUSTER_NAME
+        value: "Local Edition Gateway Reference Cluster"
+      - name: TMG_CLUSTER_MODE
+        value: "untethered"
+      - name: TMG_ZONE_NAME
+        value: "csc-cluster-mh"
+      - name: TMG_ZONE_SERIAL
+        value: "0"
+      - name: TMG_ZONE_COUNT
+        value: "1"
+      - name: TMGC_TYPE
+        value: "cache"  
+      - name: POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: AGENT_HTTP_PORT
+        value: "9080"
+      - name: AGENT_HTTPS_PORT
+        value: "9443"
+      - name: MEMCACHED_PORT
+        value: "11211"
+      - name: MEMCACHED_COUNT_PORT
+        value: "11212"
+      - name: MEMCACHED_CONTENT_PORT
+        value: "11213"
+      - name: MEMCACHED_SERVICES_PORT
+        value: "11214"
+      - name: MEMCACHED_PACKAGER_PORT
+        value: "11215"
+      - name: MEMCACHED_HTTPSCLIENT_PORT
+        value: "11216"
+    volumeMounts:
+      - name: cache-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: cachevol
+        mountPath: /mnt
+      - name: cache-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cache_properties.json
+        subPath: tml_cache_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+    volumes:
+    - name: cache-resources-vol
       secret:
-        secretName: cm-resource
+        secretName: cache-resource
         defaultMode: 420
-    - name: cm-property-vol
+    - name: cache-property-vol
       secret:
-        secretName: cm-property
+        secretName: cache-property
+        defaultMode: 420
+    - name: cluster-property-vol
+      secret:
+        secretName: cluster-property
+        defaultMode: 420
+    - name: zones-property-vol
+      secret:
+        secretName: zones-property
+        defaultMode: 420        
+  volumeClaimTemplates:
+    - metadata:
+        name: cachevol
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: cache-storage-class
+        resources:
+          requests:
+            storage: 2Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+logPod0:
+  appName: log-set-0
+  serviceName: log-svc-0
+  replicas: 1
+  metadata:
+    labels:
+      app: log-svc
+  terminationGracePeriodSeconds: 10
+  containers:
+    - name: log-svc-0
+      image: cloudsidecompany/tml-log 
+      tag: v5.5.1.GA.1
+      imagePullPolicy: IfNotPresent     
+      ports:
+      - containerPort: 9080
+        name: agent-http
+      - containerPort: 9443
+        name: agent-https
+      - containerPort: 24224
+        name: log-port
+      - containerPort: 24220
+        name: dim-data-port
+      - containerPort: 24221
+        name: metrics-port
+      - containerPort: 24222
+        name: ctner-log-port
+      resources: {}
+      env:
+        - name: TMG_RELEASE_VERSION
+          value: "5.5.1"
+        - name: TMG_RELEASE_SUFFIX
+          value: "GA"
+        - name: TMG_REGISTRY_HOST
+          value: "cass-set-0-0.cass-svc-0.mashery.svc.cluster.local"
+        - name: TMG_REGISTRY_HTTP_PORT
+          value: "8080"
+        - name: TMG_REGISTRY_HTTPS_PORT
+          value: "8443"
+        - name: TMG_CLUSTER_NAME
+          value: "Local Edition Gateway Reference Cluster"
+        - name: TMG_CLUSTER_MODE
+          value: "untethered"
+        - name: TMG_ZONE_NAME
+          value: "csc-cluster-mh"
+        - name: TMG_ZONE_SERIAL
+          value: "0"
+        - name: TMG_ZONE_COUNT
+          value: "1"
+        - name: TMGC_TYPE
+          value: "logservice"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: AGENT_HTTP_PORT
+          value: "9080"
+        - name: AGENT_HTTPS_PORT
+          value: "9443"
+        - name: LOG_PORT
+          value: "24224"
+        - name: DIM_DATA_PORT
+          value: "24220"
+        - name: METRICS_PORT
+          value: "24221"
+        - name: CONTAINERLOGS_PORT
+          value: "24222"
+      volumeMounts:
+      - name: logvol
+        mountPath: /mnt
+      - name: log-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_log_properties.json
+        subPath: tml_log_properties.json
+      - name: log-resource-vol
+        mountPath: /opt/mashery/resources
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+  volumes:
+  - name: log-property-vol
+    secret:
+      secretName: log-property
+      defaultMode: 420
+  - name: log-resource-vol
+    secret:
+      secretName: log-resource
+      defaultMode: 420
+  - name: cluster-property-vol
+    secret:
+      secretName: cluster-property
+      defaultMode: 420
+  - name: zones-property-vol
+    secret:
+      secretName: zones-property
+      defaultMode: 420
+  volumeClaimTemplates:
+  - metadata:
+      name: logvol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: log-storage-class
+      resources:
+        requests:
+          storage: 2Gi 
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+nosqlPod0:
+  appName: cass-set-0
+  serviceName: cass-svc-0
+  replicas: 1
+  metadata:
+    labels:
+      app: cass-svc
+      interface: cass-svc-0
+  terminationGracePeriodSeconds: 10
+  containers:
+    - name: cass-svc-0
+      image: cloudsidecompany/tml-nosql
+      tag: v5.5.1.GA.1
+      imagePullPolicy: IfNotPresent
+      ports:
+      - containerPort: 9080
+        name: agent-http
+      - containerPort: 9443
+        name: agent-https
+      - containerPort: 7000
+        name: intra-node
+      - containerPort: 7001
+        name: tls-intra-node
+      - containerPort: 7199
+        name: jmx
+      - containerPort: 9042
+        name: cql
+      resources: {}
+      lifecycle:
+        preStop:
+          exec:
+            command: 
+              - /bin/sh
+              - -c
+              - nodetool drain
+      env:
+        - name: TMG_RELEASE_VERSION
+          value: "5.5.1"
+        - name: TMG_RELEASE_SUFFIX
+          value: "GA"
+        - name: TMG_REGISTRY_HOST
+          value: "cass-set-0-0.cass-svc-0.mashery.svc.cluster.local"
+        - name: TMG_REGISTRY_HTTP_PORT
+          value: "8080"
+        - name: TMG_REGISTRY_HTTPS_PORT
+          value: "8443"
+        - name: TMG_CLUSTER_NAME
+          value: "Local Edition Gateway Reference Cluster"
+        - name: TMG_CLUSTER_MODE
+          value: "untethered"
+        - name: TMG_ZONE_NAME
+          value: "csc-cluster-mh"
+        - name: TMG_ZONE_SERIAL
+          value: "0"
+        - name: TMG_ZONE_COUNT
+          value: "1"
+        - name: TMGC_TYPE
+          value: "nosql"  
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: AGENT_HTTP_PORT
+          value: "9080"
+        - name: AGENT_HTTPS_PORT
+          value: "9443"
+        - name: CASSANDRA_INTRA_NODE_PORT
+          value: "7000"
+        - name: CASSANDRA_TLS_INTRA_NODE_PORT
+          value: "7001"
+        - name: CASSANDRA_JMX_PORT
+          value: "7199"
+        - name: CASSANDRA_CQL_PORT
+          value: "9042"
+        - name: CASSANDRA_MAX_HEAP
+          value: "512M"
+        - name: CASSANDRA_SEEDS
+          value: cass-set-0-0.cass-svc-0.mashery.svc.cluster.local
+        - name: CASSANDRA_CLUSTER_NAME
+          value: "Local Edition Gateway Reference Cluster"
+        - name: CASSANDRA_DC
+          value: "dc1"
+        - name: CASSANDRA_RACK
+          value: "rack1"
+        - name: CASSANDRA_DCS
+          value: "dc1"
+        - name: CASSANDRA_REPLICATION_FACTOR
+          value: "1"
+      readinessProbe:
+        exec:
+          command:
+            - /bin/bash
+            - -c
+            - /usr/local/bin/nosql-ready-probe.sh
+        failureThreshold: 5
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 10
+      volumeMounts:
+      - name: nosqlvol
+        mountPath: /var/lib/cassandra
+      - name: nosql-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: nosql-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_nosql_properties.json
+        subPath: tml_nosql_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+      - name: nosql-p12-vol
+        mountPath: /etc/cassandra/conf/tml-nosql.p12
+        subPath: tml-nosql.p12
+      - name: nosql-trust-p12-vol
+        mountPath: /etc/cassandra/conf/tml-nosql-trust.p12
+        subPath: tml-nosql-trust.p12
+  volumes:
+  - name: nosql-resources-vol
+    secret:
+      secretName: nosql-resource
+      defaultMode: 420
+  - name: nosql-property-vol
+    secret:
+      secretName: nosql-property
+  - name: cluster-property-vol
+    secret:
+      secretName: cluster-property
+  - name: zones-property-vol
+    secret:
+      secretName: zones-property
+  - name: nosql-p12-vol
+    secret:
+      secretName: nosql-p12
+  - name: nosql-trust-p12-vol
+    secret:
+      secretName: nosql-trust-p12
+  volumeClaimTemplates:
+  - metadata:
+      name: nosqlvol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: nosql-storage-class
+      resources:
+        requests:
+          storage: 2Gi
+
+reportingPod0:
+    appName: reporting-set-0
+    serviceName: reporting-svc-0
+    replicas: 1
+    podManagementPolicy: "Parallel"
+    matadata:
+        app: reporting-svc
+        interface: reporting-svc-0
+    terminationGracePeriodSeconds: 10
+    containers:
+    - name: reporting-svc-0
+      image: cloudsidecompany/tml-reporting:v5.5.1.GA.1
+      imagePullPolicy: IfNotPresent
+      lifecycle:
+        preStop:
+          exec:
+            command:
+            - /usr/local/bin/tml-event-handler.sh
+            - preStop
+      ports:
+      - containerPort: 9080
+        name: agent-http
+      - containerPort: 9443
+        name: agent-https
+      - containerPort: 3000
+        name: grafana-http
+      - containerPort: 9000
+        name: report-port-1
+      - containerPort: 24224
+        name: report-port-2
+      - containerPort: 24225
+        name: report-port-3
+      - containerPort: 24226
+        name: report-port-4
+      - containerPort: 24227
+        name: report-port-5
+      resources:
+        limits:
+          cpu: 100m
+        requests:
+          cpu: 100m
+      env:
+        - name: K8S_DEPLOY_NAMESPACE
+          value: "mashery"
+        - name: TMG_RELEASE_VERSION
+          value: "5.5.1"
+        - name: TMG_RELEASE_SUFFIX
+          value: "GA"
+        - name: TMG_REGISTRY_HOST
+          value: "cass-set-0-0.cass-svc-0.mashery.svc.cluster.local"
+        - name: TMG_REGISTRY_HTTP_PORT
+          value: "8080"
+        - name: TMG_REGISTRY_HTTPS_PORT
+          value: "8443"
+        - name: TMG_CLUSTER_NAME
+          value: "Local Edition Gateway Reference Cluster"
+        - name: TMG_CLUSTER_MODE
+          value: "untethered"
+        - name: TMG_ZONE_NAME
+          value: "csc-cluster-mh"
+        - name: TMG_ZONE_SERIAL
+          value: "0"
+        - name: TMG_ZONE_COUNT
+          value: "1"
+        - name: TMGC_TYPE
+          value: "reportingservice"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: AGENT_HTTP_PORT
+          value: "9080"
+        - name: AGENT_HTTPS_PORT
+          value: "9443"
+        - name: GRAFANA_HTTP_PORT
+          value: "3000"
+        - name: REPORTING_PORT_1
+          value: "9000"
+        - name: REPORTING_PORT_2
+          value: "24224"
+        - name: REPORTING_PORT_3
+          value: "24225"
+        - name: REPORTING_PORT_4
+          value: "24226"
+        - name: REPORTING_PORT_5
+          value: "24227"
+      volumeMounts:
+      - name: reportingvol
+        mountPath: /mnt
+      - name: reporting-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting
+      - name: fluentd-conf-vol
+        mountPath: /opt/mashery/resources/tml-reporting/fluentd/conf
+      - name: fluentd-plugin-vol
+        mountPath: /opt/mashery/resources/tml-reporting/fluentd/plugin
+      - name: grafana-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana
+      - name: grafana-user-dashboards-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana/dashboards/CustomDashboards
+      - name: grafana-operations-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana/dashboards/MasheryReporting/operations
+      - name: grafana-summary-vol
+        mountPath: /opt/mashery/resources/tml-reporting/grafana/dashboards/MasheryReporting/summary
+      - name: prometheus-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting/prometheus
+      - name: loki-resource-vol
+        mountPath: /opt/mashery/resources/tml-reporting/loki
+    volumes:
+    - name: reporting-resource-vol
+      secret:
+        secretName: reporting-resource
+        defaultMode: 420
+    - name: fluentd-conf-vol
+      secret:
+        secretName: fluentd-conf
+        defaultMode: 420
+    - name: fluentd-plugin-vol
+      secret:
+        secretName: fluentd-plugin
+        defaultMode: 420
+    - name: grafana-resource-vol
+      secret:
+        secretName: grafana-resource
+        defaultMode: 420
+    - name: grafana-user-dashboards-vol
+      secret:
+        secretName: grafana-user-dashboards
+        defaultMode: 420
+    - name: grafana-operations-vol
+      secret:
+        secretName: grafana-operations
+        defaultMode: 420
+    - name: grafana-summary-vol
+      secret:
+        secretName: grafana-summary
+        defaultMode: 420
+    - name: prometheus-resource-vol
+      secret:
+        secretName: prometheus-resource
+        defaultMode: 420
+    - name: loki-resource-vol
+      secret:
+        secretName: loki-resource
+        defaultMode: 420
+    volumeClaimTemplates:
+    - metadata:
+        name: reportingvol
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: reporting-storage-class
+        resources:
+          requests:
+            storage: 2Gi
+
+sqlPod0:
+  metadata:
+    appName: mysql-set-0
+    serviceName: mysql-svc-0
+    replicas: 1
+    metadata:
+      app: mysql-svc
+      interface: mysql-svc-0
+    terminationGracePeriodSeconds: 10
+    containers:
+    - name: mysql-svc-0
+      image: cloudsidecompany/tml-sql
+      tag: v5.5.1.GA.1
+      imagePullPolicy: IfNotPresent  
+      ports:
+      - containerPort: 9080
+        name: agent-http
+      - containerPort: 9443
+        name: agent-https
+      - containerPort: 3306
+        name: mysql-port
+      resources: {}
+      env:
+        - name: TMG_RELEASE_VERSION
+          value: "5.5.1"
+        - name: TMG_RELEASE_SUFFIX
+          value: "GA"
+        - name: TMG_REGISTRY_HOST
+          value: "cass-set-0-0.cass-svc-0.mashery.svc.cluster.local"
+        - name: TMG_REGISTRY_HTTP_PORT
+          value: "8080"
+        - name: TMG_REGISTRY_HTTPS_PORT
+          value: "8443"
+        - name: TMG_CLUSTER_NAME
+          value: "Local Edition Gateway Reference Cluster"
+        - name: TMG_CLUSTER_MODE
+          value: "untethered"
+        - name: TMG_ZONE_NAME
+          value: "csc-cluster-mh"
+        - name: TMG_ZONE_SERIAL
+          value: "0"
+        - name: TMG_ZONE_COUNT
+          value: "1"
+        - name: TMGC_TYPE
+          value: "sql"  
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: AGENT_HTTP_PORT
+          value: "9080"
+        - name: AGENT_HTTPS_PORT
+          value: "9443"
+        - name: MYSQL_PORT
+          value: "3306"
+        - name: TMGC_API_HTTP_ENABLED
+          value: "true"
+        - name: TMGC_API_HTTPS_ENABLED
+          value: "true"
+      volumeMounts:
+      - name: sqlvol
+        mountPath: /var/lib/mysql
+      - name: sql-resources-vol
+        mountPath: /opt/mashery/resources
+      - name: sql-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_sql_properties.json
+        subPath: tml_sql_properties.json
+      - name: cluster-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_cluster_properties.json
+        subPath: tml_cluster_properties.json
+      - name: zones-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_zones_properties.json
+        subPath: tml_zones_properties.json
+      - name: papi-property-vol
+        mountPath: /opt/mashery/containeragent/resources/properties/tml_papi_properties.json
+        subPath: tml_papi_properties.json
+      readinessProbe:
+        exec:
+          command:
+            - /bin/bash
+            - -c
+            - /usr/local/bin/opl-ready-probe.sh
+        failureThreshold: 3
+        initialDelaySeconds: 30
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 10
+    volumes:
+    - name: sql-resources-vol
+      secret:
+        secretName: sql-resource
+        defaultMode: 420
+    - name: sql-property-vol
+      secret:
+        secretName: sql-property
         defaultMode: 420
     - name: cluster-property-vol
       secret:
@@ -260,36 +963,165 @@ volumes:
       secret:
         secretName: papi-property
         defaultMode: 420
-    - name: cm-jks-vol
-      secret:
-        secretName: cm-jks
-        defaultMode: 420
-    - name: cm-key-vol
-      secret:
-        secretName: cm-key
-        defaultMode: 420
-  tm:
-    - name: tm-resources-vol
-      secret:
-        secretName: tm-resource
-        defaultMode: 420
-    - name: tm-property-vol
-      secret:
-        secretName: tm-property
-        defaultMode: 420
-    - name: cluster-property-vol
-      secret:
-        secretName: cluster-property
-        defaultMode: 420
-    - name: zones-property-vol
-      secret:
-        secretName: zones-property
-        defaultMode: 420
-    - name: tm-jks-vol
-      secret:
-        secretName: tm-jks
-        defaultMode: 420
-    - name: tm-trust-jks-vol
-      secret:
-        secretName: tm-trust-jks
-        defaultMode: 420 
+  volumeClaimTemplates:
+  - metadata:
+      name: sqlvol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: sql-storage-class
+      resources:
+        requests:
+          storage: 2Gi
+
+---
+#services
+cmsvc0:
+  serviceName: cm-svc
+  appName: cm-svc-0
+  spec:
+    type: LoadBalancer
+    ports:
+    - name: "cm-http-port"
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: "cm-https-port"
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    - name: "api-http-port"
+      port: 7080
+      protocol: TCP
+      targetPort: 7080
+    - name: "api-https-port"
+      port: 7443
+      protocol: TCP
+      targetPort: 7443
+    selector:
+      interface: cm-svc-0
+
+cacheSvc0:
+  metadata:
+    labels:
+      app: cache-svc
+    name: cache-svc-0
+  spec:
+    clusterIP: None
+    ports:
+    - name: "memcached" 
+      port: 11211
+    - name: "count"
+      port: 11212
+    - name: "content"
+      port: 11213
+    - name: "services"
+      port: 11214
+    - name: "packager"
+      port: 11215
+    - name: "httpsclient"
+      port: 11216
+    selector:
+      interface: cache-svc-0
+  status: {}
+
+cassSvc0:
+  metadata:
+    labels:
+      app: cass-svc
+    name: cass-svc-0
+  spec:
+    clusterIP: None
+    ports:
+    - port: 9042
+    selector:
+      interface: cass-svc-0
+  status: {}
+
+logSvc0:
+  metadata:
+    labels:
+      app: log-svc
+    name: log-svc-0
+  spec:
+    clusterIP: None
+    ports:
+    - name: "logport"
+      port: 24224
+    - name: "dimdataport"
+      port: 24220
+    - name: "metricsport"
+      port: 24221
+    - name: "containerlogsport"
+      port: 24222
+    selector:
+      interface: log-svc-0
+  status: {}
+
+mysqlSvc0:
+  metadata:
+    labels:
+      app: mysql-svc
+    name: mysql-svc-0
+  spec:
+    clusterIP: None
+    ports:
+    - name: "mysql"
+      port: 3306
+    - name: "mysql-grp-repl"
+      port: 33061  
+    selector:
+      interface: mysql-svc-0
+  status: {}
+
+reportingSvc:
+  metadata:
+    name: reporting-svc-0
+  spec:
+    clusterIP: None
+    ports:
+    - name: "grafana-http-port"
+      port: 3000
+    selector:
+      interface: reporting-svc-0
+  status: {}
+
+reportingSvcExternal:
+  metadata:
+    name: reporting-app-0
+  spec:
+    type: LoadBalancer
+    selector:
+      podName: reporting-set-0-0
+    loadBalancerIP: "hostname"
+    ports:
+    - name: "grafana-http-port"
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+  status:
+    loadBalancer: {}
+
+tmSvc:
+  metadata:
+    labels:
+      service: tm-svc
+    name: tm-svc
+  spec:
+    type: LoadBalancer
+    ports:
+    - name: "http-port"
+      port: 80
+      protocol: TCP
+      targetPort: 20080
+    - name: "https-port"
+      port: 443
+      protocol: TCP
+      targetPort: 20443
+    - name: "oauth-port"
+      port: 8083
+      protocol: TCP
+      targetPort: 8083
+    selector:
+      service: tm-svc
+  status:
+    loadBalancer: {}
